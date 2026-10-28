@@ -23,6 +23,9 @@ export interface MediaItem {
   artistName: string;
   imageKey: string;
   kind: 'song' | 'artist';
+  albumId?: string;
+  albumName?: string;
+  albumImageKey?: string;
 }
 
 export interface MediaPage {
@@ -123,6 +126,16 @@ function normalizeMedia(response: unknown, kind: MediaItem['kind'], page: number
     const imageKey = firstString(value, [
       'r2Imagekey', 'r2ImageKey', 'imageKey', 'image', 'songImage', 'artistImage', 'albumImage', 'albumIamge',
     ]);
+    const albumId = firstString(value, ['albumId', 'albumID']) || firstString(
+      isRecord(value['album']) ? value['album'] : {},
+      ['albumId', 'albumID', 'id', '_id'],
+    );
+    const albumName = firstString(value, ['albumName']) || firstString(
+      isRecord(value['album']) ? value['album'] : {},
+      ['albumName', 'name', 'title'],
+    );
+    const albumImageKey = firstString(value, ['albumImage', 'albumIamge', 'albumImageKey'])
+      || firstString(isRecord(value['album']) ? value['album'] : {}, ['imageKey', 'r2Imagekey', 'r2ImageKey']);
     return [{
       id,
       artistId,
@@ -130,6 +143,9 @@ function normalizeMedia(response: unknown, kind: MediaItem['kind'], page: number
       artistName,
       imageKey,
       kind,
+      ...(albumId ? { albumId } : {}),
+      ...(albumName ? { albumName } : {}),
+      ...(albumImageKey ? { albumImageKey } : {}),
     }];
   });
   return { items, page, totalPages: totalPages(response) };

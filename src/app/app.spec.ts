@@ -8,11 +8,14 @@ import { App } from './app';
 import { MusicApiService } from './core/services/music-api.service';
 import { getAppConfig } from './core/config/app-config';
 import { DiscoverPageComponent } from './features/discover/discover-page.component';
+import { AdminPageComponent } from './features/admin/admin-page.component';
+import { AuthPageComponent } from './features/auth/auth-page.component';
 import { LibraryService } from './core/services/library.service';
 import { MediaItem } from './core/services/music-api.service';
 import { PlaybackService } from './core/services/playback.service';
 import { MediaCacheService } from './core/services/media-cache.service';
 import { textLanguage } from './shared/utils/text-language';
+import { MediaImageComponent } from './shared/components/media-image.component';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -42,6 +45,18 @@ describe('App', () => {
     fixture.detectChanges();
     expect(fixture.componentInstance).toBeTruthy();
     expect((fixture.nativeElement as HTMLElement).querySelector('.brand')?.textContent).toContain('K-Song');
+    const navigationToggle = (fixture.nativeElement as HTMLElement).querySelector('.sidebar-toggle') as HTMLButtonElement;
+    expect(navigationToggle.getAttribute('aria-expanded')).toBe('true');
+    navigationToggle.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.sidebarCollapsed).toBe(true);
+    expect(navigationToggle.getAttribute('aria-expanded')).toBe('false');
+    const reopenToggle = (fixture.nativeElement as HTMLElement).querySelector('.sidebar-reopen') as HTMLButtonElement;
+    expect(reopenToggle.getAttribute('aria-expanded')).toBe('false');
+    reopenToggle.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.sidebarCollapsed).toBe(false);
+    expect(reopenToggle.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('switches and remembers the selected color theme', () => {
@@ -61,6 +76,125 @@ describe('App', () => {
     else window.localStorage.setItem('ksong.theme.v1', storedTheme);
     if (originalTheme === undefined) delete document.documentElement.dataset['theme'];
     else document.documentElement.dataset['theme'] = originalTheme;
+  });
+});
+
+describe('MediaImageComponent', () => {
+  it('shows animated artwork while the async image request is pending', async () => {
+    await TestBed.configureTestingModule({
+      imports: [MediaImageComponent],
+      providers: [{
+        provide: MusicApiService,
+        useValue: {
+          user: () => ({ id: 'listener' }),
+          imageBlob: () => new Promise<Blob>(() => undefined),
+        },
+      }],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(MediaImageComponent);
+    fixture.componentRef.setInput('imageKey', 'cover-key');
+    fixture.detectChanges();
+
+    const artwork = (fixture.nativeElement as HTMLElement).querySelector('.artwork-frame');
+    expect(artwork?.getAttribute('aria-busy')).toBe('true');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.artwork-shimmer')).not.toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.artwork-record')).not.toBeNull();
+    fixture.destroy();
+  });
+});
+
+describe('AuthPageComponent', () => {
+  it('renders only one loading indicator while submitting a login form', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AuthPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: MusicApiService, useValue: {} },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AuthPageComponent);
+    fixture.componentInstance.submitting = true;
+    fixture.detectChanges();
+
+    const submitButton = (fixture.nativeElement as HTMLElement).querySelector('.auth-panel form .button-wide');
+    expect(submitButton?.querySelectorAll('.button-loading-spinner')).toHaveLength(1);
+    expect(submitButton?.textContent).toContain('Signing you in');
+    fixture.destroy();
+  });
+});
+
+describe('AdminPageComponent', () => {
+  it('lets an admin select a loaded artist and review its IDs', async () => {
+    const artist = {
+      id: 'artist-42',
+      artistId: 'artist-42',
+      name: 'Quiet Band',
+      artistName: 'Quiet Band',
+      imageKey: '',
+      kind: 'artist' as const,
+      albumId: 'album-9',
+      albumName: 'Blue Hour',
+    };
+    const artists = vi.fn()
+      .mockResolvedValueOnce({ items: [artist], page: 0, totalPages: 2 })
+      .mockResolvedValueOnce({ items: [], page: 1, totalPages: 2 });
+    await TestBed.configureTestingModule({
+      imports: [AdminPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: MusicApiService, useValue: { artists, toUserMessage: vi.fn() } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AdminPageComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.admin-card-column .delete-card')).not.toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.admin-grid > .upload-card')).not.toBeNull();
+    const option = (fixture.nativeElement as HTMLElement).querySelector('.artist-option') as HTMLButtonElement;
+    expect(option.textContent).toContain('Artist ID · artist-42');
+    expect(option.textContent).toContain('Album ID · album-9');
+    option.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.artistId).toBe('artist-42');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.selected-artist-summary')?.textContent).toContain('Blue Hour');
+    fixture.componentInstance.changeArtistPage(1);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(artists).toHaveBeenLastCalledWith(1, 10, '');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.selected-artist-summary')?.textContent).toContain('Album ID · album-9');
+    fixture.destroy();
+  });
+
+  it('shows artist lookup failures and allows retry', async () => {
+    const artists = vi.fn()
+      .mockRejectedValueOnce(new Error('Artist service unavailable'))
+      .mockResolvedValueOnce({ items: [], page: 0, totalPages: 0 });
+    await TestBed.configureTestingModule({
+      imports: [AdminPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: MusicApiService, useValue: { artists, toUserMessage: (error: Error) => error.message } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AdminPageComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')?.textContent).toContain('Artist service unavailable');
+
+    fixture.componentInstance.loadArtists();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(artists).toHaveBeenCalledTimes(2);
+    expect((fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')).toBeNull();
+    fixture.destroy();
   });
 });
 
@@ -130,7 +264,12 @@ describe('MusicApiService', () => {
     expect(request.request.method).toBe('GET');
     request.flush({
       data: {
-        content: [{ artistId: 'artist-1', artistName: 'Quiet Band', r2Imagekey: 'image-key' }],
+        content: [{
+          artistId: 'artist-1',
+          artistName: 'Quiet Band',
+          r2Imagekey: 'image-key',
+          album: { id: 'album-1', name: 'Blue Hour', imageKey: 'album-image' },
+        }],
         totalPage: 4,
       },
     });
@@ -143,6 +282,9 @@ describe('MusicApiService', () => {
         artistName: 'Quiet Band',
         imageKey: 'image-key',
         kind: 'artist',
+        albumId: 'album-1',
+        albumName: 'Blue Hour',
+        albumImageKey: 'album-image',
       }],
       page: 2,
       totalPages: 4,

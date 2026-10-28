@@ -16,7 +16,16 @@ import { textLanguage } from '../../shared/utils/text-language';
           <span>Discover</span>
         </a>
         <p class="eyebrow">K-SONG · NOW PLAYING</p>
-        <span class="now-playing-live"><i></i> LISTENING ROOM</span>
+        <span class="now-playing-live" [class.is-playing]="player.isPlaying()" [class.is-loading]="player.loading()">
+          <span class="now-playing-status-mark" aria-hidden="true">
+            @if (player.isPlaying()) {
+              <i></i><i></i><i></i>
+            } @else {
+              <i></i>
+            }
+          </span>
+          {{ player.loading() ? 'Preparing' : player.isPlaying() ? 'Playing' : 'Paused' }}
+        </span>
       </header>
 
       @if (player.currentSong(); as song) {
@@ -32,15 +41,26 @@ import { textLanguage } from '../../shared/utils/text-language';
           </div>
 
           <div class="now-playing-info">
-            <p class="now-playing-caption">A MOMENT, JUST FOR YOU</p>
             <h1 id="now-playing-title" [attr.lang]="textLanguage(song.name)">{{ song.name }}</h1>
-            <p class="now-playing-artist" [attr.lang]="textLanguage(song.artistName)">{{ song.artistName || 'K-Song artist' }}</p>
+            <div class="now-playing-track-meta">
+              <p class="now-playing-artist" [attr.lang]="textLanguage(song.artistName)">{{ song.artistName || 'K-Song artist' }}</p>
+              <button
+                class="now-playing-like"
+                type="button"
+                [class.liked]="library.isLiked(song.id)"
+                [disabled]="!song.id"
+                [attr.aria-pressed]="library.isLiked(song.id)"
+                [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'"
+                [title]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'"
+                (click)="library.toggleLike(song)"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg>
+              </button>
+            </div>
             @if (player.error()) {
-              <p class="now-playing-message error-alert" role="status">{{ player.error() }}</p>
+              <p class="now-playing-message error-alert" role="alert">{{ player.error() }}</p>
             } @else if (player.loading()) {
               <p class="now-playing-message" role="status">Preparing your stream…</p>
-            } @else {
-              <p class="now-playing-message">{{ player.isPlaying() ? 'Let the music take the lead.' : 'Your next favorite is one tap away.' }}</p>
             }
 
             <div class="now-playing-progress">
@@ -58,15 +78,14 @@ import { textLanguage } from '../../shared/utils/text-language';
 
             <div class="now-playing-controls">
               <button
-                class="now-playing-like"
+                class="now-playing-skip"
                 type="button"
-                [class.liked]="library.isLiked(song.id)"
-                [disabled]="!song.id"
-                [attr.aria-pressed]="library.isLiked(song.id)"
-                [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'"
-                (click)="library.toggleLike(song)"
+                [disabled]="(player.queueIndex() <= 0 && player.currentTime() <= 3) || player.loading()"
+                (click)="player.playPrevious()"
+                [attr.aria-label]="player.currentTime() > 3 ? 'Restart current song' : 'Play previous song'"
+                [title]="player.currentTime() > 3 ? 'Restart current song' : 'Play previous song'"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 5v14M19 6l-9 6 9 6z" /></svg>
               </button>
               <button class="now-playing-toggle" type="button" [disabled]="player.loading() || !player.manifestUrl()" (click)="player.togglePlayback()"
                 [attr.aria-label]="player.isPlaying() ? 'Pause playback' : 'Resume playback'">
@@ -78,29 +97,25 @@ import { textLanguage } from '../../shared/utils/text-language';
                   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg>
                 }
               </button>
-              <span class="now-playing-control-spacer"></span>
+              <button
+                class="now-playing-skip"
+                type="button"
+                [disabled]="player.queueIndex() < 0 || player.queueIndex() >= player.queue().length - 1 || player.loading()"
+                (click)="player.playNext()"
+                aria-label="Play next song"
+                title="Play next song"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 5v14M5 6l9 6-9 6z" /></svg>
+              </button>
             </div>
-            <p class="now-playing-hint">Playback controls are also available in the player bar below.</p>
           </div>
         </div>
 
         <section class="play-queue-card" aria-labelledby="queue-title">
           <div class="play-queue-heading">
             <div>
-              <p class="eyebrow">YOUR LISTENING LINEUP</p>
+              <p class="eyebrow">QUEUE</p>
               <h2 id="queue-title">Up next <span>{{ player.queue().length }}</span></h2>
-            </div>
-            <div class="queue-step-controls">
-              <button type="button" class="button button-quiet" [disabled]="(player.queueIndex() <= 0 && player.currentTime() <= 3) || player.loading()"
-                (click)="player.playPrevious()" [attr.aria-label]="player.currentTime() > 3 ? 'Restart current song' : 'Play previous song'">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 5v14M19 6l-9 6 9 6z" /></svg>
-                <span>{{ player.currentTime() > 3 ? 'Restart' : 'Previous' }}</span>
-              </button>
-              <button type="button" class="button button-quiet" [disabled]="player.queueIndex() < 0 || player.queueIndex() >= player.queue().length - 1 || player.loading()"
-                (click)="player.playNext()" aria-label="Play next song">
-                <span>Next</span>
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 5v14M5 6l9 6-9 6z" /></svg>
-              </button>
             </div>
           </div>
           @if (player.queue().length) {

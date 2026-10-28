@@ -40,7 +40,8 @@ import { getAppConfig } from '../../core/config/app-config';
           <input id="artist-search" name="artistSearch" type="search" [(ngModel)]="artistSearch"
             placeholder="Search artists" autocomplete="off" />
           <button type="submit" class="button button-light" [disabled]="artistsLoading" [attr.aria-busy]="artistsLoading">
-            {{ artistsLoading ? 'Searching…' : 'Search' }}
+            @if (artistsLoading) { <span class="button-loading-spinner" aria-hidden="true"></span> }
+            <span>{{ artistsLoading ? 'Searching…' : 'Search' }}</span>
           </button>
         </form>
       </div>
@@ -110,7 +111,10 @@ import { getAppConfig } from '../../core/config/app-config';
                 </span>
               </button>
               <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [disabled]="!song.id" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
-              <button class="play-button" type="button" [disabled]="!song.id || player.loading()" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song, songsPage?.items ?? [])" [attr.aria-label]="'Play ' + song.name"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
+              <button class="play-button" type="button" [disabled]="!song.id || player.loading()" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song, songsPage?.items ?? [])" [attr.aria-label]="'Play ' + song.name">
+                @if (player.loading() && player.currentSong()?.id === song.id) { <span class="play-button-loading-spinner" aria-hidden="true"></span> }
+                @else { <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg> }
+              </button>
             </article>
           }
         </div>

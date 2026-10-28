@@ -6,10 +6,11 @@ import { getAppConfig } from './core/config/app-config';
 import { PlaybackService } from './core/services/playback.service';
 import { MediaCacheService } from './core/services/media-cache.service';
 import { textLanguage } from './shared/utils/text-language';
+import { MediaImageComponent } from './shared/components/media-image.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MediaImageComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -25,7 +26,7 @@ export class App implements AfterViewInit, OnDestroy {
   private playbackGeneration = 0;
   private playerReady = false;
   busy = false;
-  isPlaying = false;
+  sidebarCollapsed = false;
   theme: 'dark' | 'light' = 'dark';
 
   @ViewChild('audioElement') private audioElement?: ElementRef<HTMLAudioElement>;
@@ -76,6 +77,10 @@ export class App implements AfterViewInit, OnDestroy {
     }
   }
 
+  toggleSidebar(): void {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
+  }
+
   ngAfterViewInit(): void {
     this.playerReady = true;
     if (this.audioElement) {
@@ -104,6 +109,24 @@ export class App implements AfterViewInit, OnDestroy {
       this.busy = false;
       this.changeDetector.markForCheck();
     }
+  }
+
+  seekPlayback(event: Event): void {
+    const input = event.target;
+    if (input instanceof HTMLInputElement) {
+      this.player.seekTo(Number(input.value));
+    }
+  }
+
+  progressPercent(): number {
+    const duration = this.player.duration();
+    return duration > 0 ? Math.min(100, Math.max(0, (this.player.currentTime() / duration) * 100)) : 0;
+  }
+
+  formatTime(seconds: number): string {
+    if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+    const total = Math.floor(seconds);
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
   }
 
   private async attachStream(url: string, playbackToken: string): Promise<void> {

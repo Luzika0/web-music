@@ -22,7 +22,10 @@ import { textLanguage } from '../../shared/utils/text-language';
         <label class="sr-only" for="catalog-query">Search songs and artists</label>
         <span class="catalog-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></span>
         <input id="catalog-query" name="query" type="search" [(ngModel)]="query" placeholder="What are you in the mood for?" autocomplete="off" />
-        <button class="button button-light" type="submit" [disabled]="loading || !query.trim()" [attr.aria-busy]="loading">{{ loading ? 'Searching…' : 'Search' }}</button>
+        <button class="button button-light" type="submit" [disabled]="loading || !query.trim()" [attr.aria-busy]="loading">
+          @if (loading) { <span class="button-loading-spinner" aria-hidden="true"></span> }
+          <span>{{ loading ? 'Searching…' : 'Search' }}</span>
+        </button>
       </form>
 
       @if (error) {
