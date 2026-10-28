@@ -1,0 +1,232 @@
+import { isPlatformBrowser } from '@angular/common';
+import { ChangeDetectorRef, Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { MediaItem, MediaPage, MusicApiService } from '../../core/services/music-api.service';
+import { PlaybackService } from '../../core/services/playback.service';
+import { MediaImageComponent } from '../../shared/components/media-image.component';
+import { getAppConfig } from '../../core/config/app-config';
+
+@Component({
+  selector: 'app-discover-page',
+  imports: [FormsModule, RouterLink, DecimalPipe, MediaImageComponent],
+  template: `
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">YOUR NEXT FAVORITE IS HERE</p>
+        <h1>A little more <em>music.</em><br />A lot more you.</h1>
+        <p class="hero-lead">Find the sounds that feel like your own. Fresh voices, familiar moods, all in one place.</p>
+        <a class="button button-light hero-action" routerLink="/register">Find your sound <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
+        <span class="hero-disc"></span><span class="hero-spark">♫</span>
+        <span class="hero-caption">SOUND<br />IN COLOR</span>
+      </div>
+      <span class="hero-index" aria-hidden="true">K-SONG / DISCOVERY</span>
+    </section>
+
+    <section class="section-block artists-section" aria-labelledby="artists-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">MEET THE MAKERS</p>
+          <h2 id="artists-heading">Artists to know</h2>
+        </div>
+        <form class="search-form" (ngSubmit)="searchArtists()" role="search">
+          <label class="sr-only" for="artist-search">Search artists</label>
+          <input id="artist-search" name="artistSearch" type="search" [(ngModel)]="artistSearch"
+            placeholder="Search artists" autocomplete="off" />
+          <button type="submit" class="button button-light" [disabled]="artistsLoading" [attr.aria-busy]="artistsLoading">
+            {{ artistsLoading ? 'Searching…' : 'Search' }}
+          </button>
+        </form>
+      </div>
+      @if (artistsError) {
+        <div class="inline-alert error-alert" role="alert">{{ artistsError }} <button type="button" class="text-button" (click)="loadArtists()">Try again</button></div>
+      } @else if (artistsLoading && !artistsPage) {
+        <div class="artist-grid" aria-label="Loading artists">
+          @for (placeholder of placeholders; track placeholder) {
+            <div class="artist-card skeleton-card"><div class="skeleton artist-skeleton"></div><div class="skeleton line-skeleton"></div></div>
+          }
+        </div>
+      } @else if (artistsPage?.items?.length) {
+        <div class="artist-grid">
+          @for (artist of artistsPage?.items; track artist.id || $index) {
+            <article class="artist-card">
+              <div class="artist-art" [style.background]="colorFor(artist)" aria-hidden="true">
+                <span>{{ initial(artist.name) }}</span>
+                <app-media-image [imageKey]="artist.imageKey" [alt]="artist.name + ' artist portrait'" />
+              </div>
+              <div class="artist-info"><h3>{{ artist.name }}</h3><span>Artist</span></div>
+            </article>
+          }
+        </div>
+        @if (artistsPage?.totalPages !== 1) {
+          <div class="pagination">
+            <button type="button" class="button button-quiet" (click)="changeArtistPage(-1)" [disabled]="artistPage === 0 || artistsLoading">← Previous</button>
+            <span>Page {{ artistPage + 1 }}{{ artistsPage?.totalPages ? ' of ' + artistsPage?.totalPages : '' }}</span>
+            <button type="button" class="button button-quiet" (click)="changeArtistPage(1)" [disabled]="artistsLoading || !canGoNext(artistsPage)">Next →</button>
+          </div>
+        }
+      } @else if (!artistsLoading) {
+        <div class="empty-state"><span class="empty-icon" aria-hidden="true">◌</span><h3>No artists found</h3><p>Try a different search, or check back when more artists arrive.</p></div>
+      }
+    </section>
+
+    <section class="section-block songs-section" aria-labelledby="songs-heading">
+      <div class="section-heading">
+        <div><p class="eyebrow">PRESS PLAY, FEEL SOMETHING</p><h2 id="songs-heading">Songs for right now</h2></div>
+        <span class="section-note">A good soundtrack starts here.</span>
+      </div>
+      @if (songsError) {
+        <div class="inline-alert error-alert" role="alert">{{ songsError }} <button type="button" class="text-button" (click)="loadSongs()">Try again</button></div>
+      } @else if (songsLoading && !songsPage) {
+        <div class="song-list" aria-label="Loading songs">
+          @for (placeholder of placeholders; track placeholder) {
+            <div class="song-row"><span class="skeleton song-skeleton"></span><span class="skeleton line-skeleton"></span><span class="skeleton line-skeleton short-line"></span></div>
+          }
+        </div>
+      } @else if (songsPage?.items?.length) {
+        <div class="song-list">
+          @for (song of songsPage?.items; track song.id || $index; let index = $index) {
+            <article class="song-row">
+              <span class="song-number">{{ (songPage * pageSize) + index + 1 | number:'2.0' }}</span>
+              <button class="song-cover" type="button" [style.background]="colorFor(song)" [attr.aria-label]="'Play ' + song.name"
+                [disabled]="!song.id || player.loading()" (click)="player.play(song)">
+                <span aria-hidden="true">♫</span>
+                <app-media-image [imageKey]="song.imageKey" [alt]="''" />
+                <span class="play-overlay" aria-hidden="true">▶</span>
+              </button>
+              <div class="song-details"><h3>{{ song.name }}</h3><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
+              @if (!song.id) { <span class="song-unavailable">Playback unavailable</span> }
+              <button class="play-button" type="button" [disabled]="!song.id || player.loading()" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song)" [attr.aria-label]="'Play ' + song.name">▶</button>
+            </article>
+          }
+        </div>
+        @if (songsPage?.totalPages !== 1) {
+          <div class="pagination">
+            <button type="button" class="button button-quiet" (click)="changeSongPage(-1)" [disabled]="songPage === 0 || songsLoading">← Previous</button>
+            <span>Page {{ songPage + 1 }}{{ songsPage?.totalPages ? ' of ' + songsPage?.totalPages : '' }}</span>
+            <button type="button" class="button button-quiet" (click)="changeSongPage(1)" [disabled]="songsLoading || !canGoNext(songsPage)">Next →</button>
+          </div>
+        }
+      } @else if (!songsLoading) {
+        <div class="empty-state"><span class="empty-icon" aria-hidden="true">♫</span><h3>No songs just yet</h3><p>There’s room for something wonderful. Check back soon.</p></div>
+      }
+      @if (player.error()) { <p class="inline-alert error-alert" role="status">{{ player.error() }}</p> }
+    </section>
+    <footer class="footer"><span class="footer-brand">k.</span><span>Good things sound better together.</span><span>© 2026 K-Song</span></footer>
+  `,
+})
+export class DiscoverPageComponent implements OnInit {
+  readonly api = inject(MusicApiService);
+  readonly player = inject(PlaybackService);
+  private readonly config = getAppConfig();
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly platformId = inject(PLATFORM_ID);
+  readonly placeholders = [0, 1, 2, 3];
+  readonly pageSize = this.config.pageSize;
+  artistsPage: MediaPage | null = null;
+  songsPage: MediaPage | null = null;
+  private readonly artistNames = new Map<string, string>();
+  artistPage = 0;
+  songPage = 0;
+  artistSearch = '';
+  artistsLoading = true;
+  songsLoading = true;
+  artistsError = '';
+  songsError = '';
+
+  ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      this.artistsLoading = false;
+      this.songsLoading = false;
+      return;
+    }
+    void this.loadArtists();
+    void this.loadSongs();
+  }
+
+  async loadArtists(): Promise<void> {
+    this.artistsLoading = true;
+    this.artistsError = '';
+    try {
+      this.artistsPage = await this.api.artists(this.artistPage, this.pageSize, this.artistSearch);
+      for (const artist of this.artistsPage.items) {
+        if (artist.id && artist.name) {
+          this.artistNames.set(artist.id, artist.name);
+        }
+      }
+      this.enrichSongArtists();
+    } catch (error) {
+      this.artistsError = this.api.toUserMessage(error);
+    } finally {
+      this.artistsLoading = false;
+      this.changeDetector.markForCheck();
+    }
+  }
+
+  async loadSongs(): Promise<void> {
+    this.songsLoading = true;
+    this.songsError = '';
+    try {
+      this.songsPage = await this.api.songs(this.songPage, this.pageSize);
+      this.enrichSongArtists();
+    } catch (error) {
+      this.songsError = this.api.toUserMessage(error);
+    } finally {
+      this.songsLoading = false;
+      this.changeDetector.markForCheck();
+    }
+  }
+
+  searchArtists(): void {
+    this.artistPage = 0;
+    void this.loadArtists();
+  }
+
+  changeArtistPage(delta: number): void {
+    this.artistPage = Math.max(0, this.artistPage + delta);
+    void this.loadArtists();
+  }
+
+  changeSongPage(delta: number): void {
+    this.songPage = Math.max(0, this.songPage + delta);
+    void this.loadSongs();
+  }
+
+  canGoNext(page: MediaPage | null): boolean {
+    return !!page && (page.totalPages === null ? page.items.length === this.pageSize : page.page + 1 < page.totalPages);
+  }
+
+  initial(name: string): string {
+    return name.trim().slice(0, 1).toUpperCase() || 'K';
+  }
+
+  colorFor(item: MediaItem): string {
+    const palettes = [
+      'linear-gradient(145deg, #f8b195, #b83b5e)',
+      'linear-gradient(145deg, #6c5b7b, #355c7d)',
+      'linear-gradient(145deg, #99b898, #2a5b84)',
+      'linear-gradient(145deg, #f6d365, #fda085)',
+      'linear-gradient(145deg, #a18cd1, #fbc2eb)',
+    ];
+    const seed = item.id || item.name;
+    const index = [...seed].reduce((total, character) => total + character.charCodeAt(0), 0);
+    return palettes[index % palettes.length];
+  }
+
+  private enrichSongArtists(): void {
+    if (!this.songsPage) {
+      return;
+    }
+    this.songsPage = {
+      ...this.songsPage,
+      items: this.songsPage.items.map((song) => ({
+        ...song,
+        artistName: song.artistName || this.artistNames.get(song.artistId) || '',
+      })),
+    };
+  }
+}
