@@ -1,5 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MediaItem, MusicApiService } from '../../core/services/music-api.service';
 import { PlaybackService } from '../../core/services/playback.service';
@@ -49,7 +49,7 @@ import { textLanguage } from '../../shared/utils/text-language';
           @for (placeholder of placeholders; track placeholder) { <div class="home-song-card"><span class="skeleton home-cover-skeleton"></span><span class="skeleton line-skeleton"></span></div> }
         </div>
       } @else if (error) {
-        <div class="inline-alert error-alert" role="alert">{{ error }} <a class="text-button" routerLink="/search">Try again from Search</a></div>
+        <div class="inline-alert error-alert" role="alert">{{ error }} <button class="text-button" type="button" (click)="retry()">Try again</button></div>
       } @else if (songs.length) {
         <div class="home-song-grid">
           @for (song of songs; track song.id || $index) {
@@ -58,7 +58,7 @@ import { textLanguage } from '../../shared/utils/text-language';
                 <span aria-hidden="true">♫</span><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="home-cover-play" aria-hidden="true">▶</span>
               </button>
               <div class="home-song-meta" [attr.lang]="textLanguage(song.name, song.artistName)"><strong>{{ song.name }}</strong><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
-              <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" [attr.aria-pressed]="library.isLiked(song.id)" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
+              <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [disabled]="!song.id" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" [attr.aria-pressed]="library.isLiked(song.id)" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
             </article>
           }
         </div>
@@ -91,6 +91,7 @@ export class HomePageComponent implements OnInit {
   readonly textLanguage = textLanguage;
   private readonly api = inject(MusicApiService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly pageSize = getAppConfig().pageSize;
   readonly placeholders = [0, 1, 2, 3];
   songs: MediaItem[] = [];
@@ -120,18 +121,30 @@ export class HomePageComponent implements OnInit {
     return palettes[index % palettes.length];
   }
 
+  retry(): void {
+    void this.load();
+  }
+
   private async load(): Promise<void> {
     this.loading = true;
     this.error = '';
-    const [songs, artists] = await Promise.allSettled([
-      this.api.songs(0, 4),
-      this.api.artists(0, 4, ''),
-    ]);
-    if (songs.status === 'fulfilled') this.songs = songs.value.items;
-    if (artists.status === 'fulfilled') this.artists = artists.value.items;
-    if (songs.status === 'rejected' && artists.status === 'rejected') {
-      this.error = this.api.toUserMessage(songs.reason);
+    try {
+      const [songs, artists] = await Promise.allSettled([
+        this.api.songs(0, 4),
+        this.api.artists(0, 4, ''),
+      ]);
+      if (songs.status === 'fulfilled') {
+        this.songs = songs.value.items;
+      } else {
+        this.songs = [];
+        // Surface a failed song request even when the independent artist request succeeds.
+        this.error = this.api.toUserMessage(songs.reason);
+      }
+      this.artists = artists.status === 'fulfilled' ? artists.value.items : [];
+    } finally {
+      this.loading = false;
+      // The app uses zoneless Angular; explicitly notify change detection after async work.
+      this.changeDetector.markForCheck();
     }
-    this.loading = false;
   }
 }
