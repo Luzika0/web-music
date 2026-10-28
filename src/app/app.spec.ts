@@ -65,6 +65,23 @@ describe('MusicApiService', () => {
     expect(api.user()?.accessToken).toBe('access');
   });
 
+  it('sends bearer and user identity headers when loading the protected song catalogue', async () => {
+    const login = api.login('listener', 'secret');
+    const loginRequest = http.expectOne('/api/auth/log-in');
+    loginRequest.flush({
+      data: { token: { acessToken: 'access-token', userId: 123, refreshToken: 'refresh-token' } },
+    });
+    await login;
+
+    const songs = api.songs(0, 8);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const request = http.expectOne('/api/auth/media/list-song?page=0&size=8&searchText=');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer access-token');
+    expect(request.request.headers.get('X-User-Id')).toBe('123');
+    request.flush({ data: { content: [], totalPage: 0 } });
+    await expect(songs).resolves.toMatchObject({ items: [], page: 0 });
+  });
+
   it('normalizes artist pages and sends the optional search query', async () => {
     const artists = api.artists(2, 10, 'quiet band');
     await new Promise((resolve) => setTimeout(resolve, 0));
