@@ -354,7 +354,12 @@ export class MusicApiService {
   }
 
   private isProtectedPath(path: string): boolean {
-    return path.includes('/admin/') || path.includes('/song/');
+    // Artist discovery is public, but the song catalogue is protected by the Music Service.
+    // Keep the auth decision centralized so requests include the bearer and user headers.
+    return path.includes('/admin/')
+      || path.includes('/song/')
+      || path.includes('/media/list-song')
+      || path.includes('/media/image');
   }
 
   private async refreshIfExpiring(): Promise<void> {
@@ -469,7 +474,9 @@ export class MusicApiService {
       if (!segment || typeof atob === 'undefined') {
         return null;
       }
-      const decoded = JSON.parse(atob(segment.replace(/-/g, '+').replace(/_/g, '/'))) as { exp?: unknown };
+      const base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
+      const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+      const decoded = JSON.parse(atob(paddedBase64)) as { exp?: unknown };
       return typeof decoded.exp === 'number' ? decoded.exp : null;
     } catch {
       return null;
