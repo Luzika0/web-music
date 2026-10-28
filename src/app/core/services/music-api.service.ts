@@ -114,7 +114,10 @@ function normalizeMedia(response: unknown, kind: MediaItem['kind'], page: number
     if (!isRecord(value)) {
       return [];
     }
-    const id = firstString(value, ['songId', 'songID', 'artistId', 'artistID', 'id', '_id']);
+    // Never use artistId as a song's ID: playback authorization requires the actual song ID.
+    const id = firstString(value, kind === 'song'
+      ? ['songId', 'songID', 'id', '_id']
+      : ['artistId', 'artistID', 'id', '_id']);
     const artistId = firstString(value, ['artistId', 'artistID']);
     const name = firstString(value, kind === 'song'
       ? ['songName', 'name', 'title']
