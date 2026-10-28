@@ -1,0 +1,738 @@
+{
+  "info": {
+    "_postman_id": "c39cfb40-465b-4a3e-8a4a-6fcb5927b339",
+    "name": "Music-Auth-Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "49201623",
+    "_collection_link": "https://go.postman.co/collection/49201623-c39cfb40-465b-4a3e-8a4a-6fcb5927b339?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "auth-service",
+      "item": [
+        {
+          "name": "register and verify register",
+          "item": [
+            {
+              "name": "User-Register",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"name\": \"Panha\",\r\n    \"userName\": \"Panha\",\r\n    \"email\": \"panhamengleang@gmail.com\",\r\n    \"password\": \"Password123!\",\r\n    \"dob\": \"2004-05-15\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/api/auth/register",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "verify-otp",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"panhamengleang@gmail.com\",\r\n    \"otp\": \"182356\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/api/auth/otp-verify",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "otp-verify"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "validation and reset",
+          "item": [
+            {
+              "name": "LogIn",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var res = pm.response.json();\r\npm.collectionVariables.set('authKey', res.data.token.acessToken);\r\npm.collectionVariables.set('userId', res.data.token.userId);\r\npm.collectionVariables.set('refreshToken', res.data.token.refreshToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "",
+                    "value": "",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"emailOrUserName\": \"panhamengleang@gmail.com\",\r\n    \"password\": \"Password123!\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/api/auth/log-in",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "log-in"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "forget-password",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/api/auth/forget-password?email=panhamengleang@gmail.com",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "forget-password"
+                  ],
+                  "query": [
+                    {
+                      "key": "email",
+                      "value": "panhamengleang@gmail.com"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "reset-password",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"panhamengleang@gmail.com\",\r\n    \"otpCode\": \"123456\",\r\n    \"password\": \"Password123!\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/api/auth/reset-password",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "reset-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "log-out",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/api/auth/log-out",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "log-out"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "refreshToken",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var res = pm.response.json();\r\npm.collectionVariables.set('authKey', res.data.newAcessToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/api/auth/refresh-token?refreshToken={{refreshToken}}",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "refresh-token"
+                  ],
+                  "query": [
+                    {
+                      "key": "refreshToken",
+                      "value": "{{refreshToken}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Song-service",
+      "item": [
+        {
+          "name": "admin",
+          "item": [
+            {
+              "name": "Upload-Song",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "artistId",
+                      "value": "2",
+                      "type": "text"
+                    },
+                    {
+                      "key": "songName",
+                      "value": "ផ្ញើសារបេះដូង",
+                      "type": "text"
+                    },
+                    {
+                      "key": "songType",
+                      "value": "POP",
+                      "type": "text"
+                    },
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [
+                        "/C:/Users/ASUS/Downloads/ផ្ញើសារបេះដូង Try Menghour - ទ្រី ម៉េងហួរ Acoustic Version [COVER].mp3"
+                      ]
+                    },
+                    {
+                      "key": "songImage",
+                      "type": "file",
+                      "src": [
+                        "/C:/Users/ASUS/Downloads/licensed-image.webp"
+                      ]
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{url}}/api/auth/admin/upload-song",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "admin",
+                    "upload-song"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create-Artist",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "artistName",
+                      "value": "Try Menghour",
+                      "type": "text"
+                    },
+                    {
+                      "key": "albumName",
+                      "value": "S1",
+                      "type": "text"
+                    },
+                    {
+                      "key": "artistImage",
+                      "type": "file",
+                      "src": [
+                        "/C:/Users/ASUS/Downloads/images.webp"
+                      ]
+                    },
+                    {
+                      "key": "albumIamge",
+                      "type": "file",
+                      "src": [
+                        "/C:/Users/ASUS/Downloads/licensed-image.webp"
+                      ]
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{url}}/api/auth/admin/create-artist",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "admin",
+                    "create-artist"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "delete song",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "artistId",
+                      "value": "1",
+                      "type": "text"
+                    },
+                    {
+                      "key": "songName",
+                      "value": "NOBODY",
+                      "type": "text"
+                    },
+                    {
+                      "key": "songType",
+                      "value": "POP",
+                      "type": "text"
+                    },
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [
+                        "/C:/Users/ASUS/Music/iTunes/iTunes Media/Music/Billie Eilish/HIT ME HARD AND SOFT/04 BIRDS OF A FEATHER.m4a"
+                      ]
+                    },
+                    {
+                      "key": "songImage",
+                      "type": "file",
+                      "src": [
+                        "/C:/Users/ASUS/Downloads/licensed-image.webp"
+                      ]
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{url}}/api/auth/admin//delete-song/:songId",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "admin",
+                    "",
+                    "delete-song",
+                    ":songId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "songId",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "item": [
+            {
+              "name": "Play Music",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  },
+                  {
+                    "key": "playBack-token",
+                    "value": "{{playBack-token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{url}}/api/auth/song/:songId/hls/index.m3u8",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "song",
+                    ":songId",
+                    "hls",
+                    "index.m3u8"
+                  ],
+                  "variable": [
+                    {
+                      "key": "songId",
+                      "value": "49cdd135-3d8e-4984-ac18-40a42efb3a56"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "play back token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "var res = pm.response.json();\r\npm.collectionVariables.set('playBack-token', res.data.token);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{url}}/api/auth/song/:songId/playback-token",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "song",
+                    ":songId",
+                    "playback-token"
+                  ],
+                  "variable": [
+                    {
+                      "key": "songId",
+                      "value": "49cdd135-3d8e-4984-ac18-40a42efb3a56"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "playback event",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  },
+                  {
+                    "key": "playBack-token",
+                    "value": "{{playBack-token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{url}}/api/auth/song/:songId/playback-events",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "song",
+                    ":songId",
+                    "playback-events"
+                  ],
+                  "variable": [
+                    {
+                      "key": "songId",
+                      "value": "49cdd135-3d8e-4984-ac18-40a42efb3a56"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "playback status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  },
+                  {
+                    "key": "playBack-token",
+                    "value": "{{playBack-token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{url}}/api/auth/song/:songId/playback-status",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "song",
+                    ":songId",
+                    "playback-status"
+                  ],
+                  "variable": [
+                    {
+                      "key": "songId",
+                      "value": "49cdd135-3d8e-4984-ac18-40a42efb3a56"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "visitor",
+          "item": [
+            {
+              "name": "list songs",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  },
+                  {
+                    "key": "playBack-token",
+                    "value": "{{playBack-token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{url}}/api/auth/media/list-song?page=0&size=10",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "media",
+                    "list-song"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Artist",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/api/auth/media/artist?page=0&size=10",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "media",
+                    "artist"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "10"
+                    },
+                    {
+                      "key": "searchText",
+                      "value": "Best",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Image",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "3"
+                  }
+                ],
+                "url": {
+                  "raw": "{{url}}/api/auth/media/image?r2Imagekey=music/artistImage/3/d2bec743-17fb-4126-8761-0b0635a4c8d6.webp",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "media",
+                    "image"
+                  ],
+                  "query": [
+                    {
+                      "key": "r2Imagekey",
+                      "value": "music/artistImage/3/d2bec743-17fb-4126-8761-0b0635a4c8d6.webp"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authKey}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "authKey",
+      "secret": true
+    },
+    {
+      "key": "refreshToken",
+      "secret": true
+    },
+    {
+      "key": "playBack-token",
+      "secret": true
+    },
+    {
+      "key": "userId",
+      "secret": true
+    }
+  ]
+}
