@@ -4,6 +4,8 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { MusicApiService } from './core/services/music-api.service';
 import { getAppConfig } from './core/config/app-config';
 import { PlaybackService } from './core/services/playback.service';
+import { MediaCacheService } from './core/services/media-cache.service';
+import { textLanguage } from './shared/utils/text-language';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +16,8 @@ import { PlaybackService } from './core/services/playback.service';
 export class App implements AfterViewInit, OnDestroy {
   readonly api = inject(MusicApiService);
   readonly player = inject(PlaybackService);
+  readonly mediaCache = inject(MediaCacheService);
+  readonly textLanguage = textLanguage;
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly changeDetector = inject(ChangeDetectorRef);
@@ -22,15 +26,25 @@ export class App implements AfterViewInit, OnDestroy {
   private playerReady = false;
   busy = false;
   isPlaying = false;
+  theme: 'dark' | 'light' = 'dark';
 
   @ViewChild('audioElement') private audioElement?: ElementRef<HTMLAudioElement>;
+
+  get isNowPlaying(): boolean {
+    return this.router.url.split(/[?#]/, 1)[0] === '/now-playing';
+  }
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
       const config = getAppConfig();
-      document.documentElement.style.setProperty('--background-color', config.backgroundColor);
-      document.documentElement.style.setProperty('--accent-color', config.accentColor);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', config.backgroundColor);
+      try {
+        this.theme = window.localStorage.getItem('ksong.theme.v1') === 'light' ? 'light' : 'dark';
+      } catch {
+        this.theme = 'dark';
+      }
+      this.applyTheme();
+      document.documentElement.style.setProperty('--configured-background-color', config.backgroundColor);
+      document.documentElement.style.setProperty('--configured-accent-color', config.accentColor);
       effect(() => {
         const manifestUrl = this.player.manifestUrl();
         const token = this.player.token();
@@ -50,8 +64,23 @@ export class App implements AfterViewInit, OnDestroy {
     }
   }
 
+  toggleTheme(): void {
+    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+    if (isPlatformBrowser(this.platformId)) {
+      try {
+        window.localStorage.setItem('ksong.theme.v1', this.theme);
+      } catch {
+        // Keep the theme switch usable when browser storage is unavailable.
+      }
+      this.applyTheme();
+    }
+  }
+
   ngAfterViewInit(): void {
     this.playerReady = true;
+    if (this.audioElement) {
+      this.player.bindAudioElement(this.audioElement.nativeElement);
+    }
     const manifestUrl = this.player.manifestUrl();
     const token = this.player.token();
     if (manifestUrl && token) {
@@ -121,5 +150,13 @@ export class App implements AfterViewInit, OnDestroy {
     } catch {
       this.player.setError('Could not initialize the audio player. Try another browser.');
     }
+  }
+
+  private applyTheme(): void {
+    document.documentElement.dataset['theme'] = this.theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      'content',
+      this.theme === 'dark' ? getAppConfig().backgroundColor : '#ebebed',
+    );
   }
 }

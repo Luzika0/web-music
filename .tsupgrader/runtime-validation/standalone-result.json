@@ -1,0 +1,162 @@
+{
+  "planHash": "377346929976cc8a94f7c125a54e1ca9f9e658614e093eff8d64a4e2168468c7",
+  "phase": "standalone",
+  "recordedAtUtc": "2026-10-28T20:48:26.1316982Z",
+  "retryCount": 0,
+  "resetBaseline": false,
+  "complete": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 0,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "production-build",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E k-song@0.0.0 prebuild\r\n\u003E node scripts/prepare-config.mjs\r\n\r\nK-Song runtime configuration prepared.\r\n\r\n\u003E k-song@0.0.0 build\r\n\u003E ng build\r\n\r\n\u003E Building...\r\n\u221A Building...\r\nBrowser bundles     \r\nInitial chunk files  | Names                      |  Raw size | Estimated transfer size\r\nmain-47CGVL43.js     | main                       | 376.63 kB |               106.15 kB\r\nstyles-F4DGZR3E.css  | styles                     |  86.41 kB |                14.26 kB\r\n\r\n                     | Initial total              | 463.04 kB |               120.41 kB\r\n\r\nLazy chunk files     | Names                      |  Raw size | Estimated transfer size\r\nchunk-DvpjUoFX.js    | hls                        | 587.42 kB |               150.59 kB\r\nchunk-ORJB-rNy.js    | -                          |  41.63 kB |                 9.17 kB\r\nchunk-CGrVC-er.js    | discover-page-component    |  11.65 kB |                 3.61 kB\r\nchunk-LjHE0T-N.js    | auth-page-component        |  11.42 kB |                 2.82 kB\r\nchunk-Bq6JrYub.js    | now-playing-page-component |   9.01 kB |                 2.91 kB\r\nchunk-DpbR02Jg.js    | admin-page-component       |   8.02 kB |                 2.35 kB\r\nchunk-DqlSuo3J.js    | search-page-component      |   7.41 kB |                 2.59 kB\r\nchunk-CLKlL7zY.js    | home-page-component        |   7.40 kB |                 2.67 kB\r\nchunk-CZi9y8Xm.js    | artists-page-component     |   5.67 kB |                 2.24 kB\r\nchunk-DcbHd29-.js    | liked-songs-page-component |   3.54 kB |                 1.45 kB\r\nchunk-DVRZTjCT.js    | library-page-component     |   2.68 kB |                 1.20 kB\r\nchunk-Ceox8Que.js    | -                          |   1.13 kB |               568 bytes\r\nchunk-B6MvSJhi.js    | -                          |   1.10 kB |               468 bytes\r\n\r\n\r\nServer bundles      \r\nInitial chunk files  | Names                      |  Raw size\r\nserver.mjs           | server                     | 918.54 kB |                        \r\nchunk-IU7HJQLN.mjs   | -                          | 362.54 kB |                        \r\npolyfills.server.mjs | polyfills.server           | 235.62 kB |                        \r\nmain.server.mjs      | main.server                |  60.83 kB |                        \r\nchunk-RRD5IFE3.mjs   | -                          |   3.48 kB |                        \r\nchunk-C2KJ4ATU.mjs   | -                          |   1.54 kB |                        \r\nchunk-TWD63J35.mjs   | -                          |   1.39 kB |                        \r\nchunk-UZ4P77NX.mjs   | -                          | 151 bytes |                        \r\n\r\nLazy chunk files     | Names                      |  Raw size\r\nchunk-5X3XOOK2.mjs   | hls                        | 586.31 kB |                        \r\nchunk-APWKCDHJ.mjs   | -                          |  41.45 kB |                        \r\nchunk-RBXOAK24.mjs   | xhr2                       |  12.17 kB |                        \r\nchunk-HUBK7OPE.mjs   | xhr2                       |  12.08 kB |                        \r\nchunk-ZR5B7NNZ.mjs   | discover-page-component    |  11.46 kB |                        \r\nchunk-S67ZX7QS.mjs   | auth-page-component        |  11.14 kB |                        \r\nchunk-MAG5GP2S.mjs   | now-playing-page-component |   8.89 kB |                        \r\nchunk-U52F7PNF.mjs   | admin-page-component       |   7.83 kB |                        \r\nchunk-6A2BG5KS.mjs   | search-page-component      |   7.33 kB |                        \r\nchunk-WW2AWQG6.mjs   | home-page-component        |   7.33 kB |                        \r\nchunk-ZXNTC7EI.mjs   | artists-page-component     |   5.61 kB |                        \r\nchunk-QWGH3RL6.mjs   | liked-songs-page-component |   3.58 kB |                        \r\nchunk-UJE42XQU.mjs   | library-page-component     |   2.72 kB |                        \r\nchunk-KU6GMG5K.mjs   | -                          |   1.16 kB |                        \r\nchunk-36SA2C5D.mjs   | -                          |   1.14 kB |                        \r\n\r\nPrerendered 13 static routes.\r\nApplication bundle generation complete. [26.516 seconds] - 202\n\u2026[truncated]",
+        "durationMs": 36382
+      },
+      {
+        "name": "home-route-serves",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!DOCTYPE html\u003E\u003Chtml lang=\u0022en\u0022\u003E\u003Chead\u003E\n  \u003Cscript type=\u0022module\u0022 src=\u0022/@vite/client\u0022\u003E\u003C/script\u003E\n\n  \u003Cmeta charset=\u0022utf-8\u0022\u003E\n  \u003Ctitle\u003EHome | K-Song\u003C/title\u003E\n  \u003Cbase href=\u0022/\u0022\u003E\n  \u003Cmeta name=\u0022viewport\u0022 content=\u0022width=device-width, initial-scale=1\u0022\u003E\n  \u003Cmeta name=\u0022description\u0022 content=\u0022Discover music and artists made for the soundtrack of you. Find your sound with K-Song.\u0022\u003E\n  \u003Cmeta name=\u0022theme-color\u0022 content=\u0022#000033\u0022\u003E\n  \u003Clink rel=\u0022icon\u0022 type=\u0022image/x-icon\u0022 href=\u0022favicon.ico\u0022\u003E\n  \u003Cscript src=\u0022ksong-config.js\u0022\u003E\u003C/script\u003E\n\u003Clink rel=\u0022stylesheet\u0022 href=\u0022styles.css\u0022\u003E\u003Cstyle ng-app-id=\u0022ng\u0022\u003E\n/*# sourceMappingURL=/app.css.map */\u003C/style\u003E\u003C/head\u003E\n\u003Cbody\u003E\u003C!--nghm--\u003E\u003Cscript type=\u0022text/javascript\u0022 id=\u0022ng-event-dispatch-contract\u0022\u003E(()=\u003E{function p(t,n,r,o,e,i,f,m){return{eventType:t,event:n,targetElement:r,eic:o,timeStamp:e,eia:i,eirp:f,eiack:m}}function u(t){let n=[],r=e=\u003E{n.push(e)};return{c:t,q:n,et:[],etc:[],d:r,h:e=\u003E{r(p(e.type,e,e.target,t,Date.now()))}}}function s(t,n,r){for(let o=0;o\u003Cn.length;o\u002B\u002B){let e=n[o];(r?t.etc:t.et).push(e),t.c.addEventListener(e,t.h,r)}}function c(t,n,r,o,e=window){let i=u(t);e._ejsas||(e._ejsas={}),e._ejsas[n]=i,s(i,r),s(i,o,!0)}window.__jsaction_bootstrap=c;})();\n\u003C/script\u003E\u003Cscript\u003Ewindow.__jsaction_bootstrap(document.body,\u0022ng\u0022,[\u0022click\u0022,\u0022ended\u0022,\u0022loadedmetadata\u0022],[]);\u003C/script\u003E\n  \u003Capp-root ng-version=\u002222.2.3\u0022 _nghost-ng-c2268864006=\u0022\u0022 ngh=\u00221\u0022 ng-server-context=\u0022ssg\u0022\u003E\u003Cdiv _ngcontent-ng-c2268864006=\u0022\u0022 class=\u0022app-shell\u0022\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 href=\u0022#main-content\u0022 class=\u0022skip-link\u0022\u003ESkip to content\u003C/a\u003E\u003Cheader _ngcontent-ng-c2268864006=\u0022\u0022 class=\u0022topbar\u0022\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/\u0022 aria-label=\u0022K-Song home\u0022 class=\u0022brand\u0022 href=\u0022/\u0022 jsaction=\u0022click:;\u0022\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 class=\u0022brand-mark\u0022\u003Ek.\u003C/span\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EK-Song\u003C/span\u003E\u003C/a\u003E\u003Cnav _ngcontent-ng-c2268864006=\u0022\u0022 aria-label=\u0022Main navigation\u0022 class=\u0022main-nav\u0022\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/\u0022 class=\u0022active\u0022 aria-current=\u0022page\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EHome\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/search\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/search\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Ccircle _ngcontent-ng-c2268864006=\u0022\u0022 cx=\u002210.8\u0022 cy=\u002210.8\u0022 r=\u00226.8\u0022\u003E\u003C/circle\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022m16 16 5 5\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003ESearch\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/artists\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/artists\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Ccircle _ngcontent-ng-c2268864006=\u0022\u0022 cx=\u00229\u0022 cy=\u00228\u0022 r=\u00223.5\u0022\u003E\u003C/circle\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022M2.5 20a6.5 6.5 0 0 1 13 0M16 5.2a3.5 3.5 0 0 1 0 6.7M17 14a6 6 0 0 1 4.5 5.8\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EArtists\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/discover\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/discover\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022m12 2 2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EDiscover\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/library\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/library\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022M4 4h16v16H4zM8 8h8M8 12h8M8 16h5\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003ELibrary\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/liked\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/liked\u0022 class=\u0022\u0022 jsac\n\u2026[truncated]",
+        "durationMs": 26254
+      },
+      {
+        "name": "artists-route-serves",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!DOCTYPE html\u003E\u003Chtml lang=\u0022en\u0022\u003E\u003Chead\u003E\n  \u003Cscript type=\u0022module\u0022 src=\u0022/@vite/client\u0022\u003E\u003C/script\u003E\n\n  \u003Cmeta charset=\u0022utf-8\u0022\u003E\n  \u003Ctitle\u003EArtists | K-Song\u003C/title\u003E\n  \u003Cbase href=\u0022/\u0022\u003E\n  \u003Cmeta name=\u0022viewport\u0022 content=\u0022width=device-width, initial-scale=1\u0022\u003E\n  \u003Cmeta name=\u0022description\u0022 content=\u0022Discover music and artists made for the soundtrack of you. Find your sound with K-Song.\u0022\u003E\n  \u003Cmeta name=\u0022theme-color\u0022 content=\u0022#000033\u0022\u003E\n  \u003Clink rel=\u0022icon\u0022 type=\u0022image/x-icon\u0022 href=\u0022favicon.ico\u0022\u003E\n  \u003Cscript src=\u0022ksong-config.js\u0022\u003E\u003C/script\u003E\n\u003Clink rel=\u0022stylesheet\u0022 href=\u0022styles.css\u0022\u003E\u003Cstyle ng-app-id=\u0022ng\u0022\u003E\n/*# sourceMappingURL=/app.css.map */\u003C/style\u003E\u003C/head\u003E\n\u003Cbody\u003E\u003C!--nghm--\u003E\u003Cscript type=\u0022text/javascript\u0022 id=\u0022ng-event-dispatch-contract\u0022\u003E(()=\u003E{function p(t,n,r,o,e,i,f,m){return{eventType:t,event:n,targetElement:r,eic:o,timeStamp:e,eia:i,eirp:f,eiack:m}}function u(t){let n=[],r=e=\u003E{n.push(e)};return{c:t,q:n,et:[],etc:[],d:r,h:e=\u003E{r(p(e.type,e,e.target,t,Date.now()))}}}function s(t,n,r){for(let o=0;o\u003Cn.length;o\u002B\u002B){let e=n[o];(r?t.etc:t.et).push(e),t.c.addEventListener(e,t.h,r)}}function c(t,n,r,o,e=window){let i=u(t);e._ejsas||(e._ejsas={}),e._ejsas[n]=i,s(i,r),s(i,o,!0)}window.__jsaction_bootstrap=c;})();\n\u003C/script\u003E\u003Cscript\u003Ewindow.__jsaction_bootstrap(document.body,\u0022ng\u0022,[\u0022click\u0022,\u0022ended\u0022,\u0022loadedmetadata\u0022,\u0022submit\u0022,\u0022input\u0022,\u0022compositionstart\u0022,\u0022compositionend\u0022],[\u0022blur\u0022]);\u003C/script\u003E\n  \u003Capp-root ng-version=\u002222.2.3\u0022 _nghost-ng-c2268864006=\u0022\u0022 ngh=\u00221\u0022 ng-server-context=\u0022ssg\u0022\u003E\u003Cdiv _ngcontent-ng-c2268864006=\u0022\u0022 class=\u0022app-shell\u0022\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 href=\u0022#main-content\u0022 class=\u0022skip-link\u0022\u003ESkip to content\u003C/a\u003E\u003Cheader _ngcontent-ng-c2268864006=\u0022\u0022 class=\u0022topbar\u0022\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/\u0022 aria-label=\u0022K-Song home\u0022 class=\u0022brand\u0022 href=\u0022/\u0022 jsaction=\u0022click:;\u0022\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 class=\u0022brand-mark\u0022\u003Ek.\u003C/span\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EK-Song\u003C/span\u003E\u003C/a\u003E\u003Cnav _ngcontent-ng-c2268864006=\u0022\u0022 aria-label=\u0022Main navigation\u0022 class=\u0022main-nav\u0022\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EHome\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/search\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/search\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Ccircle _ngcontent-ng-c2268864006=\u0022\u0022 cx=\u002210.8\u0022 cy=\u002210.8\u0022 r=\u00226.8\u0022\u003E\u003C/circle\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022m16 16 5 5\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003ESearch\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/artists\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/artists\u0022 class=\u0022active\u0022 aria-current=\u0022page\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Ccircle _ngcontent-ng-c2268864006=\u0022\u0022 cx=\u00229\u0022 cy=\u00228\u0022 r=\u00223.5\u0022\u003E\u003C/circle\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022M2.5 20a6.5 6.5 0 0 1 13 0M16 5.2a3.5 3.5 0 0 1 0 6.7M17 14a6 6 0 0 1 4.5 5.8\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EArtists\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/discover\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/discover\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022m12 2 2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EDiscover\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/library\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/library\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022M4 4h16v16H4zM8 8h8M8 12h8M8 16h5\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003ELibrary\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/liked\u0022 routerlinkactive=\u0022ac\n\u2026[truncated]",
+        "durationMs": 257
+      },
+      {
+        "name": "now-playing-route-serves",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!DOCTYPE html\u003E\u003Chtml lang=\u0022en\u0022\u003E\u003Chead\u003E\n  \u003Cscript type=\u0022module\u0022 src=\u0022/@vite/client\u0022\u003E\u003C/script\u003E\n\n  \u003Cmeta charset=\u0022utf-8\u0022\u003E\n  \u003Ctitle\u003ENow Playing | K-Song\u003C/title\u003E\n  \u003Cbase href=\u0022/\u0022\u003E\n  \u003Cmeta name=\u0022viewport\u0022 content=\u0022width=device-width, initial-scale=1\u0022\u003E\n  \u003Cmeta name=\u0022description\u0022 content=\u0022Discover music and artists made for the soundtrack of you. Find your sound with K-Song.\u0022\u003E\n  \u003Cmeta name=\u0022theme-color\u0022 content=\u0022#000033\u0022\u003E\n  \u003Clink rel=\u0022icon\u0022 type=\u0022image/x-icon\u0022 href=\u0022favicon.ico\u0022\u003E\n  \u003Cscript src=\u0022ksong-config.js\u0022\u003E\u003C/script\u003E\n\u003Clink rel=\u0022stylesheet\u0022 href=\u0022styles.css\u0022\u003E\u003Cstyle ng-app-id=\u0022ng\u0022\u003E\n/*# sourceMappingURL=/app.css.map */\u003C/style\u003E\u003C/head\u003E\n\u003Cbody\u003E\u003C!--nghm--\u003E\u003Cscript type=\u0022text/javascript\u0022 id=\u0022ng-event-dispatch-contract\u0022\u003E(()=\u003E{function p(t,n,r,o,e,i,f,m){return{eventType:t,event:n,targetElement:r,eic:o,timeStamp:e,eia:i,eirp:f,eiack:m}}function u(t){let n=[],r=e=\u003E{n.push(e)};return{c:t,q:n,et:[],etc:[],d:r,h:e=\u003E{r(p(e.type,e,e.target,t,Date.now()))}}}function s(t,n,r){for(let o=0;o\u003Cn.length;o\u002B\u002B){let e=n[o];(r?t.etc:t.et).push(e),t.c.addEventListener(e,t.h,r)}}function c(t,n,r,o,e=window){let i=u(t);e._ejsas||(e._ejsas={}),e._ejsas[n]=i,s(i,r),s(i,o,!0)}window.__jsaction_bootstrap=c;})();\n\u003C/script\u003E\u003Cscript\u003Ewindow.__jsaction_bootstrap(document.body,\u0022ng\u0022,[\u0022click\u0022,\u0022ended\u0022,\u0022loadedmetadata\u0022],[]);\u003C/script\u003E\n  \u003Capp-root ng-version=\u002222.2.3\u0022 _nghost-ng-c2268864006=\u0022\u0022 ngh=\u00221\u0022 ng-server-context=\u0022ssg\u0022\u003E\u003Cdiv _ngcontent-ng-c2268864006=\u0022\u0022 class=\u0022app-shell\u0022\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 href=\u0022#main-content\u0022 class=\u0022skip-link\u0022\u003ESkip to content\u003C/a\u003E\u003Cheader _ngcontent-ng-c2268864006=\u0022\u0022 class=\u0022topbar\u0022\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/\u0022 aria-label=\u0022K-Song home\u0022 class=\u0022brand\u0022 href=\u0022/\u0022 jsaction=\u0022click:;\u0022\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 class=\u0022brand-mark\u0022\u003Ek.\u003C/span\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EK-Song\u003C/span\u003E\u003C/a\u003E\u003Cnav _ngcontent-ng-c2268864006=\u0022\u0022 aria-label=\u0022Main navigation\u0022 class=\u0022main-nav\u0022\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EHome\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/search\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/search\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Ccircle _ngcontent-ng-c2268864006=\u0022\u0022 cx=\u002210.8\u0022 cy=\u002210.8\u0022 r=\u00226.8\u0022\u003E\u003C/circle\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022m16 16 5 5\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003ESearch\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/artists\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/artists\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Ccircle _ngcontent-ng-c2268864006=\u0022\u0022 cx=\u00229\u0022 cy=\u00228\u0022 r=\u00223.5\u0022\u003E\u003C/circle\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022M2.5 20a6.5 6.5 0 0 1 13 0M16 5.2a3.5 3.5 0 0 1 0 6.7M17 14a6 6 0 0 1 4.5 5.8\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EArtists\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/discover\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/discover\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022m12 2 2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003EDiscover\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/library\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/library\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg _ngcontent-ng-c2268864006=\u0022\u0022 aria-hidden=\u0022true\u0022 viewBox=\u00220 0 24 24\u0022\u003E\u003Cpath _ngcontent-ng-c2268864006=\u0022\u0022 d=\u0022M4 4h16v16H4zM8 8h8M8 12h8M8 16h5\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan _ngcontent-ng-c2268864006=\u0022\u0022\u003ELibrary\u003C/span\u003E\u003C/a\u003E\u003Ca _ngcontent-ng-c2268864006=\u0022\u0022 routerlink=\u0022/liked\u0022 routerlinkactive=\u0022active\u0022 ariacurrentwhenactive=\u0022page\u0022 href=\u0022/liked\u0022 class=\u0022\u0022 jsaction=\u0022click:;\u0022\u003E\u003Csvg\n\u2026[truncated]",
+        "durationMs": 61
+      },
+      {
+        "name": "tests-pass",
+        "kind": "process",
+        "verificationMethod": "test-results",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E k-song@0.0.0 pretest\r\n\u003E node scripts/prepare-config.mjs\r\n\r\nK-Song runtime configuration prepared.\r\n\r\n\u003E k-song@0.0.0 test\r\n\u003E ng test --watch=false\r\n\r\n\u003E Building...\r\n\u221A Building...\r\nApplication bundle generation complete. [4.607 seconds] - 2026-10-28T20:48:20.528Z\r\n\r\n\r\n\u001B[1m\u001B[30m\u001B[46m RUN \u001B[49m\u001B[39m\u001B[22m \u001B[36mv4.1.12 \u001B[39m\u001B[90mD:/K-Song/K-Song\u001B[39m\r\n\r\n\r\n\u001B[2m Test Files \u001B[22m \u001B[1m\u001B[32m1 passed\u001B[39m\u001B[22m\u001B[90m (1)\u001B[39m\r\n\u001B[2m      Tests \u001B[22m \u001B[1m\u001B[32m22 passed\u001B[39m\u001B[22m\u001B[90m (22)\u001B[39m\r\n\u001B[2m   Start at \u001B[22m 03:48:21\r\n\u001B[2m   Duration \u001B[22m 4.19s\u001B[2m (transform 212ms, setup 783ms, import 339ms, tests 559ms, environment 1.97s)\u001B[22m\r\n\r\n",
+        "durationMs": 14285,
+        "testResults": {
+          "testFramework": "vitest",
+          "runnerDetectedFrom": "package_json",
+          "testsTotal": 22,
+          "testsPassed": 22,
+          "testsFailed": 0,
+          "testsSkipped": 0,
+          "parseFailed": false
+        }
+      }
+    ],
+    "executions": [
+      {
+        "source": "production-build",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "build"
+        ],
+        "cwd": "D:\\K-Song\\K-Song",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "home-route-serves",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "start",
+          "--",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "43982",
+          "--prebundle=false"
+        ],
+        "cwd": "D:\\K-Song\\K-Song",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "artists-route-serves",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "start",
+          "--",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "43982",
+          "--prebundle=false"
+        ],
+        "cwd": "D:\\K-Song\\K-Song",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "now-playing-route-serves",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "start",
+          "--",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "43982",
+          "--prebundle=false"
+        ],
+        "cwd": "D:\\K-Song\\K-Song",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "tests-pass",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "test",
+          "--",
+          "--watch=false"
+        ],
+        "cwd": "D:\\K-Song\\K-Song",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      }
+    ]
+  }
+}

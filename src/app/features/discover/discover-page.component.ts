@@ -4,8 +4,10 @@ import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MediaItem, MediaPage, MusicApiService } from '../../core/services/music-api.service';
+import { LibraryService } from '../../core/services/library.service';
 import { PlaybackService } from '../../core/services/playback.service';
 import { MediaImageComponent } from '../../shared/components/media-image.component';
+import { textLanguage } from '../../shared/utils/text-language';
 import { getAppConfig } from '../../core/config/app-config';
 
 @Component({
@@ -91,16 +93,24 @@ import { getAppConfig } from '../../core/config/app-config';
         <div class="song-list">
           @for (song of songsPage?.items; track song.id || $index; let index = $index) {
             <article class="song-row">
-              <span class="song-number">{{ (songPage * pageSize) + index + 1 | number:'2.0' }}</span>
-              <button class="song-cover" type="button" [style.background]="colorFor(song)" [attr.aria-label]="'Play ' + song.name"
-                [disabled]="!song.id || player.loading()" (click)="player.play(song)">
+              <button class="song-row-main" type="button" [attr.lang]="textLanguage(song.name, song.artistName)" [disabled]="!song.id || player.loading()"
+                [class.is-current]="player.currentSong()?.id === song.id"
+                [attr.aria-label]="song.id ? 'Play ' + song.name + (song.artistName ? ' by ' + song.artistName : '') : song.name + ' — playback unavailable'"
+                (click)="player.play(song, songsPage?.items ?? [])">
+                <span class="song-number">{{ (songPage * pageSize) + index + 1 | number:'2.0' }}</span>
+                <span class="song-cover" [style.background]="colorFor(song)">
                 <span aria-hidden="true">♫</span>
                 <app-media-image [imageKey]="song.imageKey" [alt]="''" />
                 <span class="play-overlay" aria-hidden="true">▶</span>
+                </span>
+                <span class="song-details">
+                  <span class="song-title">{{ song.name }}</span>
+                  <span>{{ song.artistName || 'Artist details unavailable' }}</span>
+                  @if (!song.id) { <span class="song-unavailable">Playback unavailable</span> }
+                </span>
               </button>
-              <div class="song-details"><h3>{{ song.name }}</h3><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
-              @if (!song.id) { <span class="song-unavailable">Playback unavailable</span> }
-              <button class="play-button" type="button" [disabled]="!song.id || player.loading()" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song)" [attr.aria-label]="'Play ' + song.name">▶</button>
+              <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [disabled]="!song.id" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
+              <button class="play-button" type="button" [disabled]="!song.id || player.loading()" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song, songsPage?.items ?? [])" [attr.aria-label]="'Play ' + song.name"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
             </article>
           }
         </div>
@@ -122,10 +132,12 @@ import { getAppConfig } from '../../core/config/app-config';
 export class DiscoverPageComponent implements OnInit {
   readonly api = inject(MusicApiService);
   readonly player = inject(PlaybackService);
+  readonly library = inject(LibraryService);
   private readonly config = getAppConfig();
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly platformId = inject(PLATFORM_ID);
   readonly placeholders = [0, 1, 2, 3];
+  readonly textLanguage = textLanguage;
   readonly pageSize = this.config.pageSize;
   artistsPage: MediaPage | null = null;
   songsPage: MediaPage | null = null;

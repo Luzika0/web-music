@@ -1,17 +1,27 @@
 import { Injectable, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { MediaItem, MusicApiService } from './music-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class PlaybackService {
   readonly currentSong = signal<MediaItem | null>(null);
+  readonly queue = signal<MediaItem[]>([]);
+  readonly queueIndex = signal(-1);
   readonly manifestUrl = signal('');
   readonly token = signal('');
   readonly loading = signal(false);
   readonly error = signal('');
+  readonly isPlaying = signal(false);
+  readonly currentTime = signal(0);
+  readonly duration = signal(0);
   private stopWatching: (() => void) | null = null;
   private requestGeneration = 0;
+  private audioElement: HTMLAudioElement | null = null;
 
-  constructor(private readonly api: MusicApiService) {}
+  constructor(
+    private readonly api: MusicApiService,
+    private readonly router: Router,
+  ) {}
 
   coverColor(): string {
     const palette = [
@@ -26,10 +36,29 @@ export class PlaybackService {
     return palette[index % palette.length];
   }
 
-  async play(song: MediaItem): Promise<void> {
+  async play(song: MediaItem, playlist?: readonly MediaItem[]): Promise<void> {
     if (!song.id) {
       this.error.set('This track does not include a song ID, so it cannot be played.');
       return;
+    }
+    if (playlist) {
+      const playableSongs = playlist.filter((item) => !!item.id);
+      const selectedIndex = playableSongs.findIndex((item) => item.id === song.id);
+      if (selectedIndex >= 0) {
+        this.queue.set([...playableSongs]);
+        this.queueIndex.set(selectedIndex);
+      } else {
+        this.queue.set([...playableSongs, song]);
+        this.queueIndex.set(playableSongs.length);
+      }
+    } else {
+      const existingIndex = this.queue().findIndex((item) => item.id === song.id);
+      if (existingIndex >= 0) {
+        this.queueIndex.set(existingIndex);
+      } else {
+        this.queue.set([song]);
+        this.queueIndex.set(0);
+      }
     }
     this.requestGeneration += 1;
     const generation = this.requestGeneration;
@@ -40,6 +69,10 @@ export class PlaybackService {
     this.loading.set(true);
     this.manifestUrl.set('');
     this.token.set('');
+    this.isPlaying.set(false);
+    this.currentTime.set(0);
+    this.duration.set(0);
+    void this.router.navigate(['/now-playing']);
     try {
       const session = await this.api.playbackSession(song.id);
       if (generation !== this.requestGeneration) {
@@ -76,8 +109,62 @@ export class PlaybackService {
     }
   }
 
+  playNext(): void {
+    const nextIndex = this.queueIndex() + 1;
+    const nextSong = this.queue()[nextIndex];
+    if (nextSong) {
+      void this.play(nextSong, this.queue());
+    }
+  }
+
+  playPrevious(): void {
+    if (this.currentTime() > 3) {
+      this.seekTo(0);
+      return;
+    }
+    const previousSong = this.queue()[this.queueIndex() - 1];
+    if (previousSong) {
+      void this.play(previousSong, this.queue());
+    }
+  }
+
   setError(message: string): void {
     this.error.set(message);
+  }
+
+  bindAudioElement(audio: HTMLAudioElement): void {
+    this.audioElement = audio;
+  }
+
+  updateProgress(currentTime: number, duration: number): void {
+    this.currentTime.set(Number.isFinite(currentTime) ? currentTime : 0);
+    this.duration.set(Number.isFinite(duration) ? duration : 0);
+  }
+
+  setPlaying(isPlaying: boolean): void {
+    this.isPlaying.set(isPlaying);
+  }
+
+  togglePlayback(): void {
+    if (!this.audioElement || !this.currentSong()) {
+      return;
+    }
+
+    if (this.audioElement.paused) {
+      void this.audioElement.play().catch(() => {
+        this.setError('Playback could not start. Use the player controls below or try again.');
+      });
+    } else {
+      this.audioElement.pause();
+    }
+  }
+
+  seekTo(time: number): void {
+    if (!this.audioElement || !Number.isFinite(time)) {
+      return;
+    }
+    this.audioElement.currentTime = Math.max(0, Math.min(time, this.audioElement.duration || 0));
+    this.updateProgress(this.audioElement.currentTime, this.audioElement.duration);
   }
 
   stop(): void {
@@ -89,5 +176,7 @@ export class PlaybackService {
     this.token.set('');
     this.loading.set(false);
     this.error.set('');
+    this.isPlaying.set(false);
+    this.updateProgress(0, 0);
   }
 }

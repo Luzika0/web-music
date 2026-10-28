@@ -14,8 +14,8 @@ declare global {
 
 const defaults: KSongConfig = {
   apiBaseUrl: '',
-  backgroundColor: '#000033',
-  accentColor: '#f2f2f2',
+  backgroundColor: '#000040',
+  accentColor: '#ebebed',
   pageSize: 8,
   refreshBufferSeconds: 60,
 };

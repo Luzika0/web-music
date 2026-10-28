@@ -4,8 +4,38 @@ import { adminGuard } from './core/guards/admin.guard';
 export const routes: Routes = [
   {
     path: '',
+    title: 'Home | K-Song',
+    loadComponent: () => import('./features/home/home-page.component').then((module) => module.HomePageComponent),
+  },
+  {
+    path: 'discover',
     title: 'Discover | K-Song',
     loadComponent: () => import('./features/discover/discover-page.component').then((module) => module.DiscoverPageComponent),
+  },
+  {
+    path: 'search',
+    title: 'Search | K-Song',
+    loadComponent: () => import('./features/search/search-page.component').then((module) => module.SearchPageComponent),
+  },
+  {
+    path: 'artists',
+    title: 'Artists | K-Song',
+    loadComponent: () => import('./features/artists/artists-page.component').then((module) => module.ArtistsPageComponent),
+  },
+  {
+    path: 'library',
+    title: 'Your Library | K-Song',
+    loadComponent: () => import('./features/library/library-page.component').then((module) => module.LibraryPageComponent),
+  },
+  {
+    path: 'liked',
+    title: 'Liked Songs | K-Song',
+    loadComponent: () => import('./features/library/liked-songs-page.component').then((module) => module.LikedSongsPageComponent),
+  },
+  {
+    path: 'now-playing',
+    title: 'Now Playing | K-Song',
+    loadComponent: () => import('./features/player/now-playing-page.component').then((module) => module.NowPlayingPageComponent),
   },
   {
     path: 'login',

@@ -12,7 +12,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
   template: `
     <section class="auth-layout">
       <div class="auth-art" aria-hidden="true">
-        <span class="auth-disc"></span><span class="auth-note">♫</span>
+        <span class="auth-disc"></span><svg class="auth-note" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm12-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z" /></svg>
         <p>Every good thing<br />starts with a song.</p>
         <span class="auth-art-small">A HOME FOR THE SOUNDTRACK OF YOU</span>
       </div>

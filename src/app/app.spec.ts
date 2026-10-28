@@ -1,12 +1,18 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { App } from './app';
 import { MusicApiService } from './core/services/music-api.service';
 import { getAppConfig } from './core/config/app-config';
 import { DiscoverPageComponent } from './features/discover/discover-page.component';
+import { LibraryService } from './core/services/library.service';
+import { MediaItem } from './core/services/music-api.service';
+import { PlaybackService } from './core/services/playback.service';
+import { MediaCacheService } from './core/services/media-cache.service';
+import { textLanguage } from './shared/utils/text-language';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -37,15 +43,50 @@ describe('App', () => {
     expect(fixture.componentInstance).toBeTruthy();
     expect((fixture.nativeElement as HTMLElement).querySelector('.brand')?.textContent).toContain('K-Song');
   });
+
+  it('switches and remembers the selected color theme', () => {
+    const storedTheme = window.localStorage.getItem('ksong.theme.v1');
+    const originalTheme = document.documentElement.dataset['theme'];
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const themeButton = (fixture.nativeElement as HTMLElement).querySelector('.theme-toggle') as HTMLButtonElement;
+    themeButton.click();
+    fixture.detectChanges();
+    expect(document.documentElement.dataset['theme']).toBe(fixture.componentInstance.theme);
+    expect(window.localStorage.getItem('ksong.theme.v1')).toBe(fixture.componentInstance.theme);
+    expect(themeButton?.classList.contains('theme-light')).toBe(fixture.componentInstance.theme === 'light');
+    expect(themeButton?.querySelectorAll('.theme-icon-stage svg')).toHaveLength(2);
+    fixture.destroy();
+    if (storedTheme === null) window.localStorage.removeItem('ksong.theme.v1');
+    else window.localStorage.setItem('ksong.theme.v1', storedTheme);
+    if (originalTheme === undefined) delete document.documentElement.dataset['theme'];
+    else document.documentElement.dataset['theme'] = originalTheme;
+  });
 });
 
 describe('MusicApiService', () => {
   let api: MusicApiService;
   let http: HttpTestingController;
+  const mediaCache = {
+    getPage: vi.fn(async (_userId: string, _key: string): Promise<unknown> => null),
+    setPage: vi.fn(async () => undefined),
+    getImage: vi.fn(async (_userId: string, _key: string): Promise<Blob | null> => null),
+    setImage: vi.fn(async () => undefined),
+    clearUser: vi.fn(async () => undefined),
+    reportUnavailable: vi.fn(),
+  };
 
   beforeEach(() => {
+    vi.clearAllMocks();
+    mediaCache.getPage.mockResolvedValue(null);
+    mediaCache.getImage.mockResolvedValue(null);
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: MediaCacheService, useValue: mediaCache },
+      ],
     });
     api = TestBed.inject(MusicApiService);
     http = TestBed.inject(HttpTestingController);
@@ -108,9 +149,25 @@ describe('MusicApiService', () => {
     });
   });
 
+  it('uses a cached artist page only when the API is unreachable', async () => {
+    const cachedPage = { items: [], page: 0, totalPages: 0 };
+    mediaCache.getPage.mockResolvedValue(cachedPage);
+    const artists = api.artists(0, 8, '');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    http.expectOne('/api/auth/media/artist?page=0&size=8').error(new ProgressEvent('error'));
+    await expect(artists).resolves.toEqual(cachedPage);
+    expect(mediaCache.getPage).toHaveBeenCalledWith('public', 'artists:0:8:');
+  });
+
   describe('runtime configuration', () => {
     it('uses configured discovery and refresh settings and falls back for invalid values', () => {
       const originalConfig = window.__KSONG_CONFIG__;
+      window.__KSONG_CONFIG__ = {};
+      expect(getAppConfig()).toMatchObject({
+        backgroundColor: '#000040',
+        accentColor: '#ebebed',
+      });
+
       window.__KSONG_CONFIG__ = {
         apiBaseUrl: 'https://api.example.test/',
         pageSize: 20,
@@ -160,6 +217,14 @@ describe('MusicApiService', () => {
     });
   });
 
+  it('passes a search term to the existing song catalogue query', async () => {
+    const songs = api.songs(0, 8, 'night drive');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const request = http.expectOne('/api/auth/media/list-song?page=0&size=8&searchText=night%20drive');
+    request.flush({ data: { content: [], totalPage: 0 } });
+    await expect(songs).resolves.toMatchObject({ items: [], page: 0 });
+  });
+
   it('explains CORS and connectivity failures without a misleading JSON error', async () => {
     expect(api.toUserMessage(new TypeError('Failed to fetch'))).toContain('backend CORS allowlist');
     const artists = api.artists(0, 8, '');
@@ -173,7 +238,7 @@ describe('MusicApiService', () => {
   it('uses the current music-service playback-session response contract', async () => {
     const session = api.playbackSession('song-2');
     await new Promise((resolve) => setTimeout(resolve, 0));
-    const request = http.expectOne('/api/auth/song/song-2/playback-session');
+    const request = http.expectOne('/api/auth/song/song-2/playback-token');
     expect(request.request.method).toBe('POST');
     request.flush({
       statusCode: 200,
@@ -202,6 +267,37 @@ describe('MusicApiService', () => {
     expect(request.request.headers.get('X-User-Id')).toBe('123');
     request.flush(new Blob(['image'], { type: 'image/jpeg' }));
     await expect(imageRequest).resolves.toBeInstanceOf(Blob);
+  });
+
+  it('uses cached private artwork only when the authenticated API is unreachable', async () => {
+    const login = api.login('listener', 'secret');
+    http.expectOne('/api/auth/log-in').flush({
+      data: { token: { acessToken: 'access', userId: 123, refreshToken: 'refresh' } },
+    });
+    await login;
+
+    const cachedImage = new Blob(['cached artwork'], { type: 'image/jpeg' });
+    mediaCache.getImage.mockResolvedValue(cachedImage);
+    const imageRequest = api.imageBlob('music/songImage/1/cover.jpg');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    http.expectOne('/api/auth/media/image?r2Imagekey=music%2FsongImage%2F1%2Fcover.jpg')
+      .error(new ProgressEvent('error'));
+    await expect(imageRequest).resolves.toBe(cachedImage);
+  });
+
+  it('does not use cached private artwork when the API denies authorization', async () => {
+    const login = api.login('listener', 'secret');
+    http.expectOne('/api/auth/log-in').flush({
+      data: { token: { acessToken: 'access', userId: 123, refreshToken: 'refresh' } },
+    });
+    await login;
+
+    mediaCache.getImage.mockResolvedValue(new Blob(['cached artwork'], { type: 'image/jpeg' }));
+    const imageRequest = api.imageBlob('music/songImage/1/cover.jpg');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    http.expectOne('/api/auth/media/image?r2Imagekey=music%2FsongImage%2F1%2Fcover.jpg')
+      .error(new ProgressEvent('error'), { status: 403, statusText: 'Forbidden' });
+    await expect(imageRequest).rejects.toThrow();
   });
 
   it('stops playback when the music service sends the takeover SSE event', async () => {
@@ -295,12 +391,16 @@ describe('MusicApiService', () => {
     await status;
   });
 
-  it('sends authenticated multipart uploads and deletes without an invented body', async () => {
+  it('enables admin from data.token.permission and sends authenticated admin operations', async () => {
     const login = api.login('authorized-listener', 'secret');
     http.expectOne('/api/auth/log-in').flush({
       data: {
-        token: { acessToken: 'access', userId: 'user-2', refreshToken: 'refresh' },
-        permissions: ['ADMIN'],
+        token: {
+          permission: 'ADMIN',
+          acessToken: 'access',
+          userId: 'user-2',
+          refreshToken: 'refresh',
+        },
       },
     });
     await login;
@@ -326,5 +426,95 @@ describe('MusicApiService', () => {
     expect(deletion.request.headers.get('X-User-Id')).toBe('user-2');
     deletion.flush({});
     await remove;
+  });
+});
+
+describe('LibraryService', () => {
+  let library: LibraryService;
+
+  beforeEach(() => {
+    localStorage.removeItem('ksong.library.v1');
+    TestBed.configureTestingModule({});
+    library = TestBed.inject(LibraryService);
+  });
+
+  afterEach(() => localStorage.removeItem('ksong.library.v1'));
+
+  it('persists liked catalog songs locally and removes them again', () => {
+    const song: MediaItem = {
+      id: 'song-1',
+      artistId: 'artist-1',
+      name: 'Evening song',
+      artistName: 'K-Song artist',
+      imageKey: '',
+      kind: 'song',
+    };
+
+    library.toggleLike(song);
+    expect(library.isLiked(song.id)).toBe(true);
+    expect(JSON.parse(localStorage.getItem('ksong.library.v1') ?? '[]')).toEqual([song]);
+
+    library.removeLikedSong(song.id);
+    expect(library.isLiked(song.id)).toBe(false);
+    expect(library.likedSongs()).toEqual([]);
+  });
+});
+
+describe('PlaybackService queue', () => {
+  it('plays tracks in sequence and supports previous and next selection', async () => {
+    const api = {
+      playbackSession: vi.fn(async (songId: string) => ({
+        token: `token-${songId}`,
+        sessionId: `session-${songId}`,
+        expiresAt: '2099-01-01T00:00:00Z',
+        songId,
+      })),
+      playbackStatus: vi.fn(async () => true),
+      watchPlaybackEvents: vi.fn(() => () => {}),
+      absoluteUrl: vi.fn((path: string) => path),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: { navigate: vi.fn(async () => true) } },
+        { provide: MusicApiService, useValue: api },
+      ],
+    });
+    const playback = TestBed.inject(PlaybackService);
+    const first: MediaItem = {
+      id: 'song-1', artistId: 'artist-1', name: 'First', artistName: 'Artist', imageKey: '', kind: 'song',
+    };
+    const second: MediaItem = {
+      id: 'song-2', artistId: 'artist-2', name: 'Second', artistName: 'Artist', imageKey: '', kind: 'song',
+    };
+
+    await playback.play(first, [first, second]);
+    expect(playback.queue().map((song) => song.id)).toEqual(['song-1', 'song-2']);
+    expect(playback.queueIndex()).toBe(0);
+    const audio = { currentTime: 8, duration: 120, paused: false } as HTMLAudioElement;
+    playback.bindAudioElement(audio);
+    playback.updateProgress(8, 120);
+    playback.playPrevious();
+    expect(audio.currentTime).toBe(0);
+    expect(api.playbackSession).toHaveBeenCalledTimes(1);
+
+    playback.playNext();
+    await vi.waitFor(() => expect(playback.currentSong()?.id).toBe('song-2'));
+    expect(playback.queueIndex()).toBe(1);
+
+    playback.playPrevious();
+    await vi.waitFor(() => expect(playback.currentSong()?.id).toBe('song-1'));
+    expect(playback.queueIndex()).toBe(0);
+    expect(api.playbackSession).toHaveBeenCalledTimes(3);
+
+    playback.stop();
+  });
+});
+
+describe('textLanguage', () => {
+  it('uses Khmer language metadata only when Khmer script is present', () => {
+    expect(textLanguage('សួស្តី')).toBe('km');
+    expect(textLanguage('K-Song')).toBeNull();
+    expect(textLanguage('Hello សួស្តី')).toBe('km');
   });
 });

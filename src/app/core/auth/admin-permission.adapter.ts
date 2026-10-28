@@ -4,7 +4,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * Backend contract required to enable the creator studio:
- * login responses must include data.permissions as a string array containing "ADMIN".
+ * login responses must include data.token.permission with the backend's
+ * PERMISSION_ADMIN value ("ADMIN"). The legacy data.permissions array is also accepted.
  * This adapter grants nothing when that contract is absent.
  */
 export class AdminPermissionAdapter {
@@ -12,8 +13,11 @@ export class AdminPermissionAdapter {
     if (!isRecord(response) || !isRecord(response['data'])) {
       return [];
     }
-    const permissions = response['data']['permissions'];
-    if (!Array.isArray(permissions) || !permissions.includes('ADMIN')) {
+    const data = response['data'];
+    const token = isRecord(data['token']) ? data['token'] : null;
+    const hasAdminPermission = token?.['permission'] === 'ADMIN'
+      || (Array.isArray(data['permissions']) && data['permissions'].includes('ADMIN'));
+    if (!hasAdminPermission) {
       return [];
     }
     return ['admin:manage'];

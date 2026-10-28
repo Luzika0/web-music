@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { getAppConfig } from '../config/app-config';
 import { AdminPermissionAdapter } from '../auth/admin-permission.adapter';
+import { MediaCacheService } from './media-cache.service';
 
 export interface SessionUser {
   id: string;
@@ -35,6 +36,13 @@ export interface PlaybackSession {
   sessionId: string;
   expiresAt: string;
   songId: string;
+}
+
+class ApiRequestError extends Error {
+  constructor(message: string, readonly status: number | null) {
+    super(message);
+    this.name = 'ApiRequestError';
+  }
 }
 
 interface RequestOptions {
@@ -132,6 +140,7 @@ export class MusicApiService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly mediaCache = inject(MediaCacheService);
   private readonly config = getAppConfig();
   private refreshFlight: Promise<string> | null = null;
   private session: SessionUser | null = this.loadSession();
@@ -192,21 +201,37 @@ export class MusicApiService {
   }
 
   async logout(): Promise<void> {
+    const userId = this.session?.id;
     try {
       if (this.session) {
         await this.request('POST', '/api/auth/log-out', { authenticated: true, retryUnauthorized: false });
       }
     } finally {
       this.clearSession();
+      if (userId) {
+        await this.mediaCache.clearUser(userId).catch(() => this.mediaCache.reportUnavailable());
+      }
     }
   }
 
-  async songs(page: number, size: number): Promise<MediaPage> {
-    const response = await this.request<unknown>('GET', '/api/auth/media/list-song', {
-      // Music Service's controller requires searchText even though the client collection omits it.
-      params: new HttpParams().set('page', page).set('size', size).set('searchText', ''),
-    });
-    return normalizeMedia(response, 'song', page);
+  async songs(page: number, size: number, searchText = ''): Promise<MediaPage> {
+    const cacheUser = this.session?.id ?? 'anonymous';
+    const cacheKey = `songs:${page}:${size}:${searchText.trim()}`;
+    try {
+      const response = await this.request<unknown>('GET', '/api/auth/media/list-song', {
+        // Music Service's controller requires searchText even though the client collection omits it.
+        params: new HttpParams().set('page', page).set('size', size).set('searchText', searchText.trim()),
+      });
+      const result = normalizeMedia(response, 'song', page);
+      await this.cachePage(cacheUser, cacheKey, result);
+      return result;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 0) {
+        const cached = await this.readCachedPage<MediaPage>(cacheUser, cacheKey);
+        if (cached) return cached;
+      }
+      throw error;
+    }
   }
 
   async artists(page: number, size: number, searchText: string): Promise<MediaPage> {
@@ -214,8 +239,19 @@ export class MusicApiService {
     if (searchText.trim()) {
       params = params.set('searchText', searchText.trim());
     }
-    const response = await this.request<unknown>('GET', '/api/auth/media/artist', { params });
-    return normalizeMedia(response, 'artist', page);
+    const cacheKey = `artists:${page}:${size}:${searchText.trim()}`;
+    try {
+      const response = await this.request<unknown>('GET', '/api/auth/media/artist', { params });
+      const result = normalizeMedia(response, 'artist', page);
+      await this.cachePage('public', cacheKey, result);
+      return result;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 0) {
+        const cached = await this.readCachedPage<MediaPage>('public', cacheKey);
+        if (cached) return cached;
+      }
+      throw error;
+    }
   }
 
   async createArtist(form: FormData): Promise<void> {
@@ -231,7 +267,7 @@ export class MusicApiService {
   }
 
   async playbackSession(songId: string): Promise<PlaybackSession> {
-    const response = await this.request<unknown>('POST', `/api/auth/song/${encodeURIComponent(songId)}/playback-session`, {
+    const response = await this.request<unknown>('POST', `/api/auth/song/${encodeURIComponent(songId)}/playback-token`, {
       authenticated: true,
     });
     const data = pathValue(response, 'data');
@@ -278,25 +314,38 @@ export class MusicApiService {
     if (!this.session) {
       throw new Error('Sign in to view artist and song artwork.');
     }
+    const userId = this.session.id;
     const path = `/api/auth/media/image?r2Imagekey=${encodeURIComponent(imageKey)}`;
     await this.refreshIfExpiring();
     const accessTokenUsed = this.session?.accessToken;
     try {
-      return await firstValueFrom(this.http.get(this.absoluteUrl(path), {
+      const image = await firstValueFrom(this.http.get(this.absoluteUrl(path), {
         headers: this.requestHeaders({}, true),
         responseType: 'blob',
       }));
+      await this.cacheImage(userId, imageKey, image);
+      return image;
     } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 0) {
+        const cachedImage = await this.readCachedImage(userId, imageKey);
+        if (cachedImage) return cachedImage;
+      }
       if (error instanceof HttpErrorResponse && error.status === 401) {
         if (!this.session?.accessToken || this.session.accessToken === accessTokenUsed) {
           await this.refreshAccessToken();
         }
         try {
-          return await firstValueFrom(this.http.get(this.absoluteUrl(path), {
+          const image = await firstValueFrom(this.http.get(this.absoluteUrl(path), {
             headers: this.requestHeaders({}, true),
             responseType: 'blob',
           }));
+          await this.cacheImage(userId, imageKey, image);
+          return image;
         } catch (retryError) {
+          if (retryError instanceof HttpErrorResponse && retryError.status === 0) {
+            const cachedImage = await this.readCachedImage(userId, imageKey);
+            if (cachedImage) return cachedImage;
+          }
           throw this.readableError(retryError);
         }
       }
@@ -484,7 +533,44 @@ export class MusicApiService {
   }
 
   private readableError(error: unknown): Error {
-    return new Error(this.errorMessage(error));
+    return new ApiRequestError(
+      this.errorMessage(error),
+      error instanceof HttpErrorResponse ? error.status : null,
+    );
+  }
+
+  private async readCachedPage<T>(userId: string, key: string): Promise<T | null> {
+    try {
+      return await this.mediaCache.getPage<T>(userId, key);
+    } catch {
+      this.mediaCache.reportUnavailable();
+      return null;
+    }
+  }
+
+  private async cachePage(userId: string, key: string, value: unknown): Promise<void> {
+    try {
+      await this.mediaCache.setPage(userId, key, value);
+    } catch {
+      this.mediaCache.reportUnavailable();
+    }
+  }
+
+  private async readCachedImage(userId: string, key: string): Promise<Blob | null> {
+    try {
+      return await this.mediaCache.getImage(userId, key);
+    } catch {
+      this.mediaCache.reportUnavailable();
+      return null;
+    }
+  }
+
+  private async cacheImage(userId: string, key: string, image: Blob): Promise<void> {
+    try {
+      await this.mediaCache.setImage(userId, key, image);
+    } catch {
+      this.mediaCache.reportUnavailable();
+    }
   }
 
   private errorMessage(error: unknown): string {

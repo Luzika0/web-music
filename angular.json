@@ -27,6 +27,26 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "inter-latin-wght-normal.woff2",
+                "input": "node_modules/@fontsource-variable/inter/files",
+                "output": "assets/fonts"
+              },
+              {
+                "glob": "noto-sans-khmer-khmer-wght-normal.woff2",
+                "input": "node_modules/@fontsource-variable/noto-sans-khmer/files",
+                "output": "assets/fonts"
+              },
+              {
+                "glob": "battambang-khmer-{400,700}-normal.woff2",
+                "input": "node_modules/@fontsource/battambang/files",
+                "output": "assets/fonts"
+              },
+              {
+                "glob": "sql-wasm.wasm",
+                "input": "node_modules/sql.js/dist",
+                "output": "assets/sql"
               }
             ],
             "styles": [

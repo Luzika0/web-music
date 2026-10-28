@@ -29,8 +29,8 @@ function integerValue(name, fallback, min, max) {
 
 const config = {
   apiBaseUrl: value('KSONG_API_BASE_URL', ''),
-  backgroundColor: value('KSONG_BACKGROUND_COLOR', '#000033'),
-  accentColor: value('KSONG_ACCENT_COLOR', '#f2f2f2'),
+  backgroundColor: value('KSONG_BACKGROUND_COLOR', '#000040'),
+  accentColor: value('KSONG_ACCENT_COLOR', '#ebebed'),
   pageSize: integerValue('KSONG_PAGE_SIZE', 8, 1, 100),
   refreshBufferSeconds: integerValue('KSONG_REFRESH_BUFFER_SECONDS', 60, 0, 3600),
 };
