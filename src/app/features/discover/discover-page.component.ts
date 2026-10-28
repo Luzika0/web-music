@@ -93,7 +93,7 @@ import { getAppConfig } from '../../core/config/app-config';
         <div class="song-list">
           @for (song of songsPage?.items; track song.id || $index; let index = $index) {
             <article class="song-row">
-              <button class="song-row-main" type="button" [attr.lang]="textLanguage(song.name, song.artistName)" [disabled]="!song.id || player.loading()"
+              <button class="song-row-main" type="button" [attr.lang]="textLanguage(song.name, song.artistName)" [disabled]="!song.id"
                 [class.is-current]="player.currentSong()?.id === song.id"
                 [attr.aria-label]="song.id ? 'Play ' + song.name + (song.artistName ? ' by ' + song.artistName : '') : song.name + ' — playback unavailable'"
                 (click)="player.play(song, songsPage?.items ?? [])">
@@ -110,7 +110,7 @@ import { getAppConfig } from '../../core/config/app-config';
                 </span>
               </button>
               <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [disabled]="!song.id" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
-              <button class="play-button" type="button" [disabled]="!song.id || player.loading()" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song, songsPage?.items ?? [])" [attr.aria-label]="'Play ' + song.name"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
+              <button class="play-button" type="button" [disabled]="!song.id" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song, songsPage?.items ?? [])" [attr.aria-label]="'Play ' + song.name"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
             </article>
           }
         </div>
@@ -142,6 +142,8 @@ export class DiscoverPageComponent implements OnInit {
   artistsPage: MediaPage | null = null;
   songsPage: MediaPage | null = null;
   private readonly artistNames = new Map<string, string>();
+  private artistRequestGeneration = 0;
+  private songRequestGeneration = 0;
   artistPage = 0;
   songPage = 0;
   artistSearch = '';
@@ -161,35 +163,49 @@ export class DiscoverPageComponent implements OnInit {
   }
 
   async loadArtists(): Promise<void> {
+    const requestGeneration = ++this.artistRequestGeneration;
     this.artistsLoading = true;
     this.artistsError = '';
     try {
-      this.artistsPage = await this.api.artists(this.artistPage, this.pageSize, this.artistSearch);
-      for (const artist of this.artistsPage.items) {
+      const page = await this.api.artists(this.artistPage, this.pageSize, this.artistSearch);
+      if (requestGeneration !== this.artistRequestGeneration) return;
+      this.artistsPage = page;
+      for (const artist of page.items) {
         if (artist.id && artist.name) {
           this.artistNames.set(artist.id, artist.name);
         }
       }
       this.enrichSongArtists();
     } catch (error) {
-      this.artistsError = this.api.toUserMessage(error);
+      if (requestGeneration === this.artistRequestGeneration) {
+        this.artistsError = this.api.toUserMessage(error);
+      }
     } finally {
-      this.artistsLoading = false;
-      this.changeDetector.markForCheck();
+      if (requestGeneration === this.artistRequestGeneration) {
+        this.artistsLoading = false;
+        this.changeDetector.markForCheck();
+      }
     }
   }
 
   async loadSongs(): Promise<void> {
+    const requestGeneration = ++this.songRequestGeneration;
     this.songsLoading = true;
     this.songsError = '';
     try {
-      this.songsPage = await this.api.songs(this.songPage, this.pageSize);
+      const page = await this.api.songs(this.songPage, this.pageSize);
+      if (requestGeneration !== this.songRequestGeneration) return;
+      this.songsPage = page;
       this.enrichSongArtists();
     } catch (error) {
-      this.songsError = this.api.toUserMessage(error);
+      if (requestGeneration === this.songRequestGeneration) {
+        this.songsError = this.api.toUserMessage(error);
+      }
     } finally {
-      this.songsLoading = false;
-      this.changeDetector.markForCheck();
+      if (requestGeneration === this.songRequestGeneration) {
+        this.songsLoading = false;
+        this.changeDetector.markForCheck();
+      }
     }
   }
 
