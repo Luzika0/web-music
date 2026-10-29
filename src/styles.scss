@@ -2647,3 +2647,122 @@ body {
   .now-playing-art-wrap.is-playing .now-playing-art { transform: none; }
   .queue-equalizer i { animation: none; }
 }
+
+
+/* Responsive hardening: shared layout rules for catalog, discovery, library and playback pages. */
+html { min-width: 320px; scroll-padding-top: 88px; }
+body, app-root, .app-shell { min-width: 320px; }
+img, video, canvas, svg { max-width: 100%; }
+.page-content, .catalog-page, .admin-page, .now-playing-page,
+.home-hero, .hero, .section-block, .catalog-heading, .section-heading {
+  min-width: 0;
+}
+.page-content { width: min(1200px, calc(100% - 48px)); }
+:is(.home-song-grid, .home-artist-grid, .artist-grid, .song-grid, .catalog-grid, .library-grid) > * { min-width: 0; }
+:is(.home-song-meta, .song-details, .song-meta, .artist-info, .player-copy) { min-width: 0; }
+:is(.home-song-meta, .song-details, .song-meta) :is(strong, h3, span) {
+  overflow: hidden; text-overflow: ellipsis;
+}
+:is(input, select, textarea) { max-width: 100%; }
+button, a { touch-action: manipulation; }
+@media (max-width: 1100px) {
+  .topbar { gap: 14px; }
+  .main-nav { gap: clamp(8px, 1.3vw, 18px); }
+  .account-nav { gap: 7px; }
+  .account-profile-copy { max-width: 120px; }
+  .account-profile-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .page-content { width: calc(100% - 40px); }
+  .section-heading { gap: 16px; }
+  .player-bar { gap: 12px; padding-inline: 18px; }
+}
+@media (max-width: 760px) {
+  .page-content { width: calc(100% - 32px); }
+  .section-block { margin-bottom: 42px; }
+  .section-heading { align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+  .section-heading > :last-child { max-width: 100%; }
+  .search-form { width: 100%; min-width: 0; }
+  .search-form input { width: 100%; min-width: 0; }
+  .artist-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .home-song-grid, .home-artist-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .hero, .home-hero { min-height: 360px; padding: 34px 26px; }
+  .hero-copy { width: min(100%, 480px); }
+  .hero-art { right: -7%; width: 48%; opacity: .55; }
+  .hero h1, .home-copy h1 { font-size: clamp(38px, 7vw, 56px); }
+  .song-row { grid-template-columns: 28px 44px minmax(0, 1fr) 34px; gap: 10px; }
+  .song-row > :nth-child(4) { display: none; }
+  .song-cover { width: 44px; height: 44px; }
+  .pagination { gap: 10px; }
+  .pagination .button { min-height: 40px; padding-inline: 12px; }
+  .auth-layout { grid-template-columns: minmax(0, 1fr); }
+  .now-playing-page { padding-inline: 0; }
+}
+@media (max-width: 580px) {
+  .app-shell { padding-bottom: 154px; }
+  .topbar { gap: 8px; padding: 10px 12px; }
+  .sidebar-brand-row { flex: 0 0 auto; }
+  .sidebar-toggle { position: static; width: 34px; height: 34px; }
+  .main-nav { gap: 5px; padding: 2px 0 5px; scrollbar-width: thin; }
+  .main-nav a { flex: 0 0 auto; min-height: 40px; padding: 0 10px; font-size: 12px; }
+  .main-nav a svg { width: 16px; height: 16px; }
+  .account-nav { gap: 6px; }
+  .account-profile { max-width: 118px; gap: 6px; padding: 0; }
+  .account-profile-copy { max-width: 72px; }
+  .account-profile-copy small { display: none; }
+  .account-nav .button { min-height: 36px; padding-inline: 10px; font-size: 11px; }
+  .page-content { width: calc(100% - 26px); }
+  .hero, .home-hero { min-height: 340px; margin: 14px 0 30px; padding: 28px 20px; border-radius: 18px; }
+  .hero-copy, .home-copy { width: 100%; max-width: 100%; }
+  .hero-copy > p:not(.eyebrow), .home-copy > p:not(.eyebrow) { max-width: 34ch; font-size: 13px; }
+  .hero-art { right: -20%; width: 70%; opacity: .28; }
+  .hero-index, .home-kicker { bottom: 14px; left: 18px; font-size: 8px; }
+  .hero-caption { right: 4%; bottom: 8%; font-size: 8px; }
+  .section-heading h2 { font-size: clamp(22px, 6vw, 28px); }
+  .section-note { font-size: 11px; }
+  .artist-card { padding: 9px; }
+  .artist-art { aspect-ratio: 1; font-size: 42px; }
+  .artist-info { align-items: flex-start; flex-direction: column; gap: 4px; padding-top: 9px; }
+  .home-song-card { padding: 10px; }
+  .song-row { grid-template-columns: 20px 40px minmax(0, 1fr) 30px; gap: 8px; min-height: 68px; }
+  .song-cover { width: 40px; height: 40px; }
+  .song-details h3, .home-song-meta strong { font-size: 12px; }
+  .song-details span, .home-song-meta span { font-size: 10px; }
+  .pagination { flex-wrap: wrap; }
+  .pagination .button { padding-inline: 10px; font-size: 11px; }
+  .player-bar {
+    right: 8px; bottom: max(8px, env(safe-area-inset-bottom)); left: 8px;
+    grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
+    min-height: 0; padding: 10px 11px; border-radius: 16px;
+  }
+  .player-track-link { min-width: 0; gap: 8px; }
+  .mini-cover { width: 38px; height: 38px; }
+  .player-copy { max-width: 38vw; }
+  .player-copy strong { font-size: 11px; }
+  .player-copy > span:not(.player-track-status) { font-size: 10px; }
+  .player-track-status { font-size: 9px; }
+  .player-main { display: grid; grid-template-columns: auto; min-width: 0; gap: 5px; }
+  .player-transport { gap: 4px; }
+  .player-control { width: 30px; height: 30px; }
+  .player-control-main { width: 36px; height: 36px; }
+  .player-progress { grid-column: 1 / -1; width: 100%; }
+  .player-progress input { min-width: 0; }
+  .player-close { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; }
+  .player-error { max-width: 100%; font-size: 10px; }
+  .toast { top: 12px; right: 12px; left: 12px; max-width: none; }
+  .footer { flex-wrap: wrap; }
+}
+@media (max-width: 380px) {
+  .page-content { width: calc(100% - 20px); }
+  .brand { gap: 6px; font-size: 16px; }
+  .brand-mark { width: 30px; height: 30px; }
+  .account-profile { display: none; }
+  .main-nav a { gap: 4px; padding-inline: 8px; font-size: 11px; }
+  .home-song-grid, .home-artist-grid, .artist-grid { gap: 8px; }
+  .home-song-card { padding: 8px; }
+  .player-copy { max-width: 32vw; }
+  .player-control { width: 27px; height: 27px; }
+  .player-control-main { width: 32px; height: 32px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-song-card, .artist-card, .song-row, .button { transition: none !important; }
+  .skeleton { animation: none !important; }
+}
