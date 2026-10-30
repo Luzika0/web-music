@@ -16,7 +16,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
       </div>
       <div class="inline-alert info-alert" role="note">
         <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></svg>
-        <span>Song IDs are not reliably available from the public listing contract. To remove a track, enter its backend song ID below. No admin listing endpoint is assumed.</span>
+        <span>Use the live song catalog below to review uploaded tracks and delete the exact record. The catalog uses the authenticated Music Service listing endpoint.</span>
       </div>
       <section class="admin-record-overview" aria-label="Live record details">
         <article class="admin-record-card">
