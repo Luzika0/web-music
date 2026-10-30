@@ -5,12 +5,13 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, MediaPage, MusicApiService } from '../../core/services/music-api.service';
 import { MediaImageComponent } from '../../shared/components/media-image.component';
+import { AppIconComponent } from '../../shared/components/app-icon.component';
 import { getAppConfig } from '../../core/config/app-config';
 import { textLanguage } from '../../shared/utils/text-language';
 
 @Component({
   selector: 'app-artists-page',
-  imports: [FormsModule, RouterLink, MediaImageComponent],
+  imports: [FormsModule, RouterLink, MediaImageComponent, AppIconComponent],
   template: `
     <section class="catalog-page">
       <header class="catalog-heading">
@@ -20,7 +21,7 @@ import { textLanguage } from '../../shared/utils/text-language';
       </header>
       <form class="catalog-search" role="search" (ngSubmit)="search()">
         <label class="sr-only" for="artist-directory-search">Search artists</label>
-        <span class="catalog-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></span>
+        <span class="catalog-search-icon" aria-hidden="true"><app-icon name="search" /></span>
         <input id="artist-directory-search" name="artistSearch" type="search" [(ngModel)]="searchText" placeholder="Search artist names" autocomplete="off" />
         <button class="button button-light" type="submit" [attr.aria-busy]="loading">
           @if (loading) { <span class="button-loading-spinner" aria-hidden="true"></span> }
@@ -38,7 +39,7 @@ import { textLanguage } from '../../shared/utils/text-language';
           @for (artist of page?.items; track artist.id || $index) {
             <article class="directory-artist">
               <div class="directory-artist-art" [style.background]="colorFor(artist)"><span>{{ initial(artist.name) }}</span><app-media-image [imageKey]="artist.imageKey" [alt]="artist.name + ' artist portrait'" /></div>
-              <div class="directory-artist-copy"><p class="eyebrow">K-SONG ARTIST</p><h2 [attr.lang]="textLanguage(artist.name)">{{ artist.name }}</h2><p>Discover their music in the catalog.</p><a class="button button-quiet" [routerLink]="['/search']" [queryParams]="{ q: artist.name }">Find their music <span aria-hidden="true">→</span></a></div>
+              <div class="directory-artist-copy"><p class="eyebrow">K-SONG ARTIST</p><h2 [attr.lang]="textLanguage(artist.name)">{{ artist.name }}</h2><p>Discover their music in the catalog.</p><a class="button button-quiet" [routerLink]="['/search']" [queryParams]="{ q: artist.name }">Find their music <app-icon name="next" /></a></div>
             </article>
           }
         </div>
@@ -50,7 +51,7 @@ import { textLanguage } from '../../shared/utils/text-language';
           </div>
         }
       } @else if (!loading) {
-        <div class="empty-state"><span class="empty-icon" aria-hidden="true">♫</span><h2>No artists found</h2><p>There are no artists in this page yet. Check back later.</p><a class="button button-light" routerLink="/search">Search the catalog</a></div>
+        <div class="empty-state"><span class="empty-icon" aria-hidden="true"><app-icon name="music" size="30" /></span><h2>No artists found</h2><p>There are no artists in this page yet. Check back later.</p><a class="button button-light" routerLink="/search">Search the catalog</a></div>
       }
     </section>
   `,
