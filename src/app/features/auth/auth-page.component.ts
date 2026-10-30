@@ -18,7 +18,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
         <span class="auth-art-small">A HOME FOR THE SOUNDTRACK OF YOU</span>
       </div>
       <div class="auth-panel">
-        <a class="back-link" routerLink="/">
+        <a class="back-link" routerLink="/" (click)="cancelPendingPlayback()">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6M9 12h11" /></svg>
           <span>Back to discovery</span>
         </a>
@@ -261,6 +261,10 @@ export class AuthPageComponent implements OnInit {
     this.title.setTitle(`K-Song | ${this.heading}`);
   }
 
+  cancelPendingPlayback(): void {
+    this.playback.cancelPendingPlayback();
+  }
+
   togglePasswordVisibility(): void {
     this.passwordVisible = !this.passwordVisible;
   }
@@ -290,7 +294,11 @@ export class AuthPageComponent implements OnInit {
           await this.api.login(this.identity.trim(), this.password);
           const destination = this.safeNext ?? (this.api.isAdmin() ? '/admin' : '/');
           await this.router.navigateByUrl(destination);
-          await this.playback.resumePendingPlayback();
+          if (this.route.snapshot.queryParamMap.get('signInToPlay') === '1') {
+            await this.playback.resumePendingPlayback();
+          } else {
+            this.playback.cancelPendingPlayback();
+          }
           break;
         }
         case 'forgot-password':
