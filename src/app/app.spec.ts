@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
@@ -17,6 +18,8 @@ import { MediaCacheService } from './core/services/media-cache.service';
 import { textLanguage } from './shared/utils/text-language';
 import { MediaImageComponent } from './shared/components/media-image.component';
 import { requireAuthenticatedSession } from './core/guards/authenticated.guard';
+import { SearchPageComponent } from './features/search/search-page.component';
+import { of } from 'rxjs';
 
 const SESSION_STORAGE_KEY = 'ksong.session.v1';
 const validAccessToken = () =>
@@ -268,6 +271,40 @@ describe('AuthPageComponent', () => {
 
     expect(api.login).toHaveBeenCalledWith('admin', 'secret');
     expect(router.navigateByUrl).toHaveBeenCalledWith('/admin');
+    fixture.destroy();
+  });
+});
+
+describe('SearchPageComponent SSR behavior', () => {
+  it('does not start catalog HTTP requests while rendering a search URL on the server', async () => {
+    const api = {
+      songs: vi.fn(),
+      artists: vi.fn(),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    const params = convertToParamMap({ q: 'night drive' });
+    await TestBed.configureTestingModule({
+      imports: [SearchPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: PLATFORM_ID, useValue: 'server' },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: { queryParamMap: params },
+            queryParamMap: of(params),
+          },
+        },
+        { provide: MusicApiService, useValue: api },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(SearchPageComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.query).toBe('night drive');
+    expect(api.songs).not.toHaveBeenCalled();
+    expect(api.artists).not.toHaveBeenCalled();
     fixture.destroy();
   });
 });
