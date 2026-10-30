@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { getAppConfig } from '../config/app-config';
 import { AdminPermissionAdapter } from '../auth/admin-permission.adapter';
-import { MediaCacheService } from './media-cache.service';
+import { IMAGE_CACHE_FRESH_MS, PAGE_CACHE_FRESH_MS, MediaCacheService } from './media-cache.service';
 
 export interface SessionUser {
   id: string;
@@ -277,6 +277,8 @@ export class MusicApiService {
   async songs(page: number, size: number, searchText = ''): Promise<MediaPage> {
     const cacheUser = this.session?.id ?? 'anonymous';
     const cacheKey = `songs:${page}:${size}:${searchText.trim()}`;
+    const cached = await this.readCachedPageEntry<MediaPage>(cacheUser, cacheKey);
+    if (cached && Date.now() - cached.cachedAt < PAGE_CACHE_FRESH_MS) return cached.value;
     try {
       const response = await this.request<unknown>('GET', '/api/auth/media/list-song', {
         // Music Service's controller requires searchText even though the client collection omits it.
@@ -286,10 +288,7 @@ export class MusicApiService {
       await this.cachePage(cacheUser, cacheKey, result);
       return result;
     } catch (error) {
-      if (error instanceof ApiRequestError && error.status === 0) {
-        const cached = await this.readCachedPage<MediaPage>(cacheUser, cacheKey);
-        if (cached) return cached;
-      }
+      if (error instanceof ApiRequestError && error.status === 0 && cached) return cached.value;
       throw error;
     }
   }
@@ -300,16 +299,15 @@ export class MusicApiService {
       params = params.set('searchText', searchText.trim());
     }
     const cacheKey = `artists:${page}:${size}:${searchText.trim()}`;
+    const cached = await this.readCachedPageEntry<MediaPage>('public', cacheKey);
+    if (cached && Date.now() - cached.cachedAt < PAGE_CACHE_FRESH_MS) return cached.value;
     try {
       const response = await this.request<unknown>('GET', '/api/auth/media/artist', { params });
       const result = normalizeMedia(response, 'artist', page);
       await this.cachePage('public', cacheKey, result);
       return result;
     } catch (error) {
-      if (error instanceof ApiRequestError && error.status === 0) {
-        const cached = await this.readCachedPage<MediaPage>('public', cacheKey);
-        if (cached) return cached;
-      }
+      if (error instanceof ApiRequestError && error.status === 0 && cached) return cached.value;
       throw error;
     }
   }
@@ -421,6 +419,8 @@ export class MusicApiService {
       throw new Error('Sign in to view artist and song artwork.');
     }
     const userId = this.session.id;
+    const cached = await this.readCachedImageEntry(userId, imageKey);
+    if (cached && Date.now() - cached.cachedAt < IMAGE_CACHE_FRESH_MS) return cached.value;
     const path = `/api/auth/media/image?r2Imagekey=${encodeURIComponent(imageKey)}`;
     await this.refreshIfExpiring();
     const accessTokenUsed = this.session?.accessToken;
@@ -433,8 +433,7 @@ export class MusicApiService {
       return image;
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 0) {
-        const cachedImage = await this.readCachedImage(userId, imageKey);
-        if (cachedImage) return cachedImage;
+        if (cached) return cached.value;
       }
       if (error instanceof HttpErrorResponse && error.status === 401) {
         if (!this.session?.accessToken || this.session.accessToken === accessTokenUsed) {
@@ -449,8 +448,7 @@ export class MusicApiService {
           return image;
         } catch (retryError) {
           if (retryError instanceof HttpErrorResponse && retryError.status === 0) {
-            const cachedImage = await this.readCachedImage(userId, imageKey);
-            if (cachedImage) return cachedImage;
+            if (cached) return cached.value;
           }
           throw this.readableError(retryError);
         }
@@ -674,9 +672,22 @@ export class MusicApiService {
     );
   }
 
-  private async readCachedPage<T>(userId: string, key: string): Promise<T | null> {
+  private async readCachedPageEntry<T>(userId: string, key: string): Promise<{ value: T; cachedAt: number } | null> {
     try {
-      return await this.mediaCache.getPage<T>(userId, key);
+      return await this.mediaCache.getPageEntry<T>(userId, key);
+    } catch {
+      this.mediaCache.reportUnavailable();
+      return null;
+    }
+  }
+
+  private async readCachedPage<T>(userId: string, key: string): Promise<T | null> {
+    return (await this.readCachedPageEntry<T>(userId, key))?.value ?? null;
+  }
+
+  private async readCachedImageEntry(userId: string, key: string): Promise<{ value: Blob; cachedAt: number } | null> {
+    try {
+      return await this.mediaCache.getImageEntry(userId, key);
     } catch {
       this.mediaCache.reportUnavailable();
       return null;
