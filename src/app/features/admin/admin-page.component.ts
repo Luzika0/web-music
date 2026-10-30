@@ -14,10 +14,44 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
         <h1>Make room for <em>new sounds.</em></h1>
         <p>Bring artists and their music to the K-Song community.</p>
       </div>
-      <div class="inline-alert info-alert" role="note">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></svg>
-        <span>Song IDs are not reliably available from the public listing contract. To remove a track, enter its backend song ID below. No admin listing endpoint is assumed.</span>
-      </div>
+      <section class="admin-card admin-song-catalog" aria-labelledby="admin-song-catalog-title">
+        <div class="admin-card-title">
+          <span class="admin-card-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm12-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z" /></svg></span>
+          <div><p class="eyebrow">LIVE CATALOG</p><h2 id="admin-song-catalog-title">Manage uploaded songs</h2></div>
+          <button class="button button-quiet" type="button" (click)="loadSongs()" [disabled]="songsLoading">Refresh</button>
+        </div>
+        <div class="admin-song-search">
+          <input aria-label="Search songs" name="songSearch" [(ngModel)]="songSearch" placeholder="Search song or artist" (keydown.enter)="$event.preventDefault(); searchSongs()" />
+          <button class="button button-quiet" type="button" (click)="searchSongs()" [disabled]="songsLoading">Search</button>
+        </div>
+        @if (songLookupError) {
+          <p class="artist-lookup-error" role="alert">{{ songLookupError }} <button class="text-button" type="button" (click)="loadSongs()">Try again</button></p>
+        } @else if (songsLoading && !songOptions.length) {
+          <p class="artist-lookup-status" role="status">Loading song records…</p>
+        } @else if (songOptions.length) {
+          <div class="admin-song-list">
+            @for (song of songOptions; track song.id) {
+              <article class="admin-song-row">
+                <span class="admin-song-art">
+                  @if (song.imageKey) { <app-media-image [imageKey]="song.imageKey" [alt]="''" /> }
+                  @else { <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm12-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z" /></svg> }
+                </span>
+                <span class="admin-song-copy"><strong>{{ song.name }}</strong><small>{{ song.artistName || 'Artist details unavailable' }}</small><small class="record-id">{{ song.id }}</small></span>
+                <button class="button button-danger admin-song-delete" type="button" (click)="deleteCatalogSong(song)" [disabled]="busy" [attr.aria-label]="'Delete ' + song.name">Delete</button>
+              </article>
+            }
+          </div>
+          @if (songsPageCount > 1) {
+            <div class="artist-picker-pagination">
+              <button type="button" class="button button-quiet" (click)="changeSongPage(-1)" [disabled]="songPage === 0 || songsLoading">Previous</button>
+              <span>Page {{ songPage + 1 }} of {{ songsPageCount }}</span>
+              <button type="button" class="button button-quiet" (click)="changeSongPage(1)" [disabled]="songPage >= songsPageCount - 1 || songsLoading">Next</button>
+            </div>
+          }
+        } @else {
+          <p class="artist-lookup-status">No songs found in the catalog.</p>
+        }
+      </section>
       <section class="admin-record-overview" aria-label="Live record details">
         <article class="admin-record-card">
           <div class="admin-record-heading">
@@ -246,6 +280,13 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   albumName = '';
   artistId = '';
   artistSearch = '';
+  songSearch = '';
+  songOptions: MediaItem[] = [];
+  songsLoading = false;
+  songLookupError = '';
+  songPage = 0;
+  songsPageCount = 1;
+  private songRequestGeneration = 0;
   songName = '';
   songType = '';
   readonly songTypes = ['ROCK', 'CLASSICAL', 'POP', 'JAZZ', 'HIP_HOP', 'COUNTRY', 'OTHER'];
@@ -270,7 +311,10 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   private destroyed = false;
 
   ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId)) void this.loadArtists();
+    if (isPlatformBrowser(this.platformId)) {
+      void this.loadArtists();
+      void this.loadSongs();
+    }
   }
 
   setArtistImage(event: Event): void {
@@ -290,6 +334,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroyed = true;
     this.artistRequestGeneration += 1;
+    this.songRequestGeneration += 1;
     this.revokePreview(this.artistImagePreview);
     this.revokePreview(this.albumImagePreview);
     this.revokePreview(this.songImagePreview);
@@ -321,6 +366,39 @@ export class AdminPageComponent implements OnInit, OnDestroy {
         this.changeDetector.markForCheck();
       }
     }
+  }
+
+  async loadSongs(page = 0, searchText = this.songSearch): Promise<void> {
+    const generation = ++this.songRequestGeneration;
+    this.songsLoading = true;
+    this.songLookupError = '';
+    try {
+      const result = await this.api.songs(page, 10, searchText);
+      if (this.destroyed || generation !== this.songRequestGeneration) return;
+      this.songOptions = result.items.filter(song => !!song.id);
+      this.songPage = result.page;
+      this.songsPageCount = result.totalPages ?? (result.items.length === 10 ? page + 2 : page + 1);
+    } catch (error) {
+      if (this.destroyed || generation !== this.songRequestGeneration) return;
+      this.songLookupError = this.api.toUserMessage(error);
+    } finally {
+      if (!this.destroyed && generation === this.songRequestGeneration) {
+        this.songsLoading = false;
+        this.changeDetector.markForCheck();
+      }
+    }
+  }
+
+  searchSongs(): void { void this.loadSongs(0, this.songSearch.trim()); }
+
+  changeSongPage(delta: number): void {
+    const nextPage = this.songPage + delta;
+    if (nextPage >= 0 && nextPage < this.songsPageCount) void this.loadSongs(nextPage, this.songSearch.trim());
+  }
+
+  async deleteCatalogSong(song: MediaItem): Promise<void> {
+    if (!isPlatformBrowser(this.platformId) || !window.confirm(`Permanently delete "${song.name}"?`)) return;
+    await this.perform('delete', 'Song deleted successfully.', () => this.api.deleteSong(song.id));
   }
 
   searchArtists(): void {
@@ -388,6 +466,9 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     try {
       await action();
       this.success = successMessage;
+      if (operation === 'song' || operation === 'delete') {
+        await this.loadSongs(0, this.songSearch.trim());
+      }
       if (operation === 'artist') {
         this.artistSearch = this.artistName;
         await this.loadArtists(0, this.artistSearch);
