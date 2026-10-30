@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PlaybackService } from '../../core/services/playback.service';
+import { AppIconComponent } from '../../shared/components/app-icon.component';
 import { LibraryService } from '../../core/services/library.service';
 
 @Component({
   selector: 'app-library-page',
-  imports: [RouterLink],
+  imports: [RouterLink, AppIconComponent],
   template: `
     <section class="catalog-page">
       <header class="catalog-heading">
@@ -15,9 +16,9 @@ import { LibraryService } from '../../core/services/library.service';
       </header>
       <div class="inline-alert info-alert" role="note">Local demo library · Your likes are saved in this browser only and are not synced to your account.</div>
       <a class="library-liked-feature" routerLink="/liked">
-        <span class="liked-art" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></span>
+        <span class="liked-art" aria-hidden="true"><app-icon name="heart" /></span>
         <span class="liked-feature-copy"><small>YOUR COLLECTION</small><strong>Liked Songs</strong><span>{{ library.likedSongs().length }} songs saved on this device</span></span>
-        <span class="shortcut-arrow" aria-hidden="true">↗</span>
+        <span class="shortcut-arrow" aria-hidden="true"><app-icon name="external" /></span>
       </a>
       <div class="section-heading library-section-heading"><div><p class="eyebrow">SAMPLE COLLECTIONS</p><h2>Mixes for your mood</h2></div><span class="demo-badge">DEMO</span></div>
       <div class="demo-playlist-grid">
