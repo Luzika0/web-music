@@ -13,7 +13,7 @@ import { textLanguage } from '../../shared/utils/text-language';
     <section class="now-playing-page" aria-labelledby="now-playing-title">
       <header class="now-playing-header">
         <a class="button button-quiet" routerLink="/discover" aria-label="Back to Discover">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+          <app-icon name="previous" />
           <span>Discover</span>
         </a>
         <p class="eyebrow">K-SONG · NOW PLAYING</p>
@@ -140,7 +140,7 @@ import { textLanguage } from '../../shared/utils/text-language';
                       @if (player.queueIndex() === index && player.isPlaying()) {
                         <span class="queue-equalizer"><i></i><i></i><i></i></span>
                       } @else if (player.queueIndex() === index) {
-                        <span class="queue-pause-mark">Ⅱ</span>
+                        <span class="queue-pause-mark"><app-icon name="pause" /></span>
                       } @else {
                         {{ index + 1 }}
                       }
@@ -167,7 +167,7 @@ import { textLanguage } from '../../shared/utils/text-language';
         </section>
       } @else {
         <div class="now-playing-empty">
-          <span class="now-playing-empty-icon" aria-hidden="true">♫</span>
+          <span class="now-playing-empty-icon" aria-hidden="true"><app-icon name="music" size="32" /></span>
           <p class="eyebrow">YOUR LISTENING ROOM</p>
           <h1 id="now-playing-title">Choose a song to begin.</h1>
           <p>Pick a track from Discover, Search, or your Liked Songs and it will appear here.</p>
