@@ -8,12 +8,13 @@ import { MediaItem, MediaPage, MusicApiService } from '../../core/services/music
 import { LibraryService } from '../../core/services/library.service';
 import { PlaybackService } from '../../core/services/playback.service';
 import { MediaImageComponent } from '../../shared/components/media-image.component';
+import { AppIconComponent } from '../../shared/components/app-icon.component';
 import { textLanguage } from '../../shared/utils/text-language';
 import { getAppConfig } from '../../core/config/app-config';
 
 @Component({
   selector: 'app-discover-page',
-  imports: [FormsModule, RouterLink, DecimalPipe, MediaImageComponent],
+  imports: [FormsModule, RouterLink, DecimalPipe, MediaImageComponent, AppIconComponent],
   template: `
     <section class="hero">
       <div class="hero-copy">
@@ -70,9 +71,9 @@ import { getAppConfig } from '../../core/config/app-config';
         </div>
         @if (artistsPage?.totalPages !== 1) {
           <div class="pagination">
-            <button type="button" class="button button-quiet" (click)="changeArtistPage(-1)" [disabled]="artistPage === 0 || artistsLoading">← Previous</button>
+            <button type="button" class="button button-quiet" (click)="changeArtistPage(-1)" [disabled]="artistPage === 0 || artistsLoading"><app-icon name="previous" /> Previous</button>
             <span aria-live="polite" aria-atomic="true">Page {{ artistPage + 1 }}{{ artistsPage?.totalPages ? ' of ' + artistsPage?.totalPages : '' }}</span>
-            <button type="button" class="button button-quiet" (click)="changeArtistPage(1)" [disabled]="artistsLoading || !canGoNext(artistsPage)">Next →</button>
+            <button type="button" class="button button-quiet" (click)="changeArtistPage(1)" [disabled]="artistsLoading || !canGoNext(artistsPage)">Next <app-icon name="next" /></button>
           </div>
         }
       } @else if (!artistsLoading) {
@@ -103,7 +104,7 @@ import { getAppConfig } from '../../core/config/app-config';
                 (click)="player.play(song, songsPage?.items ?? [])">
                 <span class="song-number">{{ (songPage * pageSize) + index + 1 | number:'2.0' }}</span>
                 <span class="song-cover" [style.background]="colorFor(song)">
-                <span aria-hidden="true">♫</span>
+                <app-icon name="music" />
                 <app-media-image [imageKey]="song.imageKey" [alt]="''" />
                 <span class="play-overlay" aria-hidden="true">▶</span>
                 </span>
@@ -113,19 +114,19 @@ import { getAppConfig } from '../../core/config/app-config';
                   @if (!song.id) { <span class="song-unavailable">Playback unavailable</span> }
                 </span>
               </button>
-              <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [disabled]="!song.id" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
+              <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [disabled]="!song.id" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" (click)="library.toggleLike(song)"><app-icon name="heart" /></button>
               <button class="play-button" type="button" [disabled]="!song.id" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song, songsPage?.items ?? [])" [attr.aria-label]="'Play ' + song.name">
                 @if (player.loading() && player.currentSong()?.id === song.id) { <span class="play-button-loading-spinner" aria-hidden="true"></span> }
-                @else { <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg> }
+                @else { <app-icon name="play" /> }
               </button>
             </article>
           }
         </div>
         @if (songsPage?.totalPages !== 1) {
           <div class="pagination">
-            <button type="button" class="button button-quiet" (click)="changeSongPage(-1)" [disabled]="songPage === 0 || songsLoading">← Previous</button>
+            <button type="button" class="button button-quiet" (click)="changeSongPage(-1)" [disabled]="songPage === 0 || songsLoading"><app-icon name="previous" /> Previous</button>
             <span aria-live="polite" aria-atomic="true">Page {{ songPage + 1 }}{{ songsPage?.totalPages ? ' of ' + songsPage?.totalPages : '' }}</span>
-            <button type="button" class="button button-quiet" (click)="changeSongPage(1)" [disabled]="songsLoading || !canGoNext(songsPage)">Next →</button>
+            <button type="button" class="button button-quiet" (click)="changeSongPage(1)" [disabled]="songsLoading || !canGoNext(songsPage)">Next <app-icon name="next" /></button>
           </div>
         }
       } @else if (!songsLoading) {
