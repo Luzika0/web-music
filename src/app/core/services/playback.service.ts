@@ -22,6 +22,7 @@ export class PlaybackService {
   readonly repeatMode = signal<RepeatMode>('off');
 
   private stopWatching: (() => void) | null = null;
+  private pendingPlayback: { song: MediaItem; playlist?: readonly MediaItem[]; navigateToNowPlaying: boolean } | null = null;
   private requestGeneration = 0;
   private audioElement: HTMLAudioElement | null = null;
 
@@ -62,6 +63,22 @@ export class PlaybackService {
       this.error.set('This track does not include a song ID, so it cannot be played.');
       return;
     }
+    // Do not request a protected playback session or mutate the player for signed-out visitors.
+    // Keep the selected track in memory so a successful login can resume it automatically.
+    if (!this.api.user()) {
+      this.pendingPlayback = {
+        song,
+        ...(playlist ? { playlist: [...playlist] } : {}),
+        navigateToNowPlaying,
+      };
+      const currentUrl = this.router.url || '/discover';
+      const returnUrl = currentUrl.startsWith('/login') ? '/discover' : currentUrl;
+      await this.router.navigate(['/login'], {
+        queryParams: { next: returnUrl, signInToPlay: '1' },
+      });
+      return;
+    }
+
     if (playlist) {
       const playableSongs = playlist.filter((item) => !!item.id);
       const selectedIndex = playableSongs.findIndex((item) => item.id === song.id);
@@ -134,6 +151,13 @@ export class PlaybackService {
         this.loading.set(false);
       }
     }
+  }
+
+  async resumePendingPlayback(): Promise<void> {
+    const pending = this.pendingPlayback;
+    if (!pending || !this.api.user()) return;
+    this.pendingPlayback = null;
+    await this.play(pending.song, pending.playlist, pending.navigateToNowPlaying);
   }
 
   playNext(autoEnded: boolean = false): void {
