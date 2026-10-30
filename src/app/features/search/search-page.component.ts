@@ -45,12 +45,12 @@ import { textLanguage } from '../../shared/utils/text-language';
             <div class="song-list">
               @for (song of songs; track song.id || $index) {
                 <article class="song-row">
-                  <button class="song-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id || player.loading()" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
+                  <button class="song-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
                     <span aria-hidden="true">♫</span><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="play-overlay" aria-hidden="true">▶</span>
                   </button>
                   <div class="song-details" [attr.lang]="textLanguage(song.name, song.artistName)"><h3>{{ song.name }}</h3><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
                   <button class="like-button" type="button" [disabled]="!song.id" [class.liked]="library.isLiked(song.id)" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
-                  <button class="play-button" type="button" [disabled]="!song.id || player.loading()" (click)="player.play(song, songs)" [attr.aria-label]="'Play ' + song.name"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
+                  <button class="play-button" type="button" [disabled]="!song.id" (click)="player.play(song, songs)" [attr.aria-label]="'Play ' + song.name"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
                 </article>
               }
             </div>
