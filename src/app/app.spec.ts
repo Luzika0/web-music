@@ -1224,7 +1224,10 @@ describe('PlaybackService HLS authorization recovery', () => {
     await playback.play(song);
     expect(playback.token()).toBe('playback-token-1');
 
-    await playback.renewCurrentPlayback();
+    await Promise.all([
+      playback.renewCurrentPlayback(),
+      playback.renewCurrentPlayback(),
+    ]);
     expect(api.playbackSession).toHaveBeenCalledTimes(2);
     expect(playback.token()).toBe('playback-token-2');
     expect(playback.currentSong()?.id).toBe(song.id);
