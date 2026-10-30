@@ -67,8 +67,11 @@ export class App implements AfterViewInit, OnDestroy {
           }
         }
       });
+      let observedFavoritesUserId: string | null | undefined;
       effect(() => {
-        const userId = this.api.user()?.id;
+        const userId = this.api.user()?.id ?? null;
+        if (userId === observedFavoritesUserId) return;
+        observedFavoritesUserId = userId;
         if (userId) {
           void this.library.loadFavorites().catch(() => {});
         } else {
