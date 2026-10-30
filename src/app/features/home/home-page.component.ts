@@ -56,7 +56,7 @@ import { textLanguage } from '../../shared/utils/text-language';
           @for (song of songs; track song.id || $index) {
             <article class="home-song-card">
               <button class="home-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
-                <app-icon name="music" /><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="home-cover-play" aria-hidden="true">▶</span>
+                <app-icon name="music" /><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="home-cover-play" aria-hidden="true"><app-icon name="play" /></span>
               </button>
               <div class="home-song-meta" [attr.lang]="textLanguage(song.name, song.artistName)"><strong>{{ song.name }}</strong><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
               <button class="like-button" type="button" [disabled]="!song.id" [class.liked]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" [attr.aria-pressed]="library.isLiked(song.id)" (click)="library.toggleLike(song)"><app-icon name="heart" /></button>
