@@ -39,7 +39,7 @@ import { LibraryService } from '../../core/services/library.service';
         <div class="demo-playlist-grid">
           @for (playlist of library.playlists(); track playlist.id) {
             <article class="demo-playlist-card">
-              <button class="demo-playlist-art" type="button" (click)="selectedId.set(playlist.id)" [attr.aria-label]="'Open ' + playlist.name">♫</button>
+              <button class="demo-playlist-art" type="button" (click)="openPlaylist(playlist.id)" [attr.aria-label]="'Open ' + playlist.name">♫</button>
               <p class="eyebrow">YOUR PLAYLIST</p>
               <h3>{{ playlist.name }}</h3>
               <p>{{ playlist.description || 'No description' }}</p>
@@ -123,6 +123,12 @@ export class LibraryPageComponent {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  async openPlaylist(id: string): Promise<void> {
+    this.selectedId.set(id);
+    try { await this.library.loadPlaylist(id); }
+    catch (error) { this.library.error.set(error instanceof Error ? error.message : 'Could not load playlist.'); }
   }
 
   beginEdit(id: string, name: string, description: string): void {
