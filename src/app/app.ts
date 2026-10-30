@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { MusicApiService } from './core/services/music-api.service';
 import { getAppConfig } from './core/config/app-config';
 import { PlaybackService } from './core/services/playback.service';
+import { LibraryService } from './core/services/library.service';
 import { textLanguage } from './shared/utils/text-language';
 import { MediaImageComponent } from './shared/components/media-image.component';
 
@@ -16,6 +17,7 @@ import { MediaImageComponent } from './shared/components/media-image.component';
 export class App implements AfterViewInit, OnDestroy {
   readonly api = inject(MusicApiService);
   readonly player = inject(PlaybackService);
+  readonly library = inject(LibraryService);
   readonly textLanguage = textLanguage;
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
@@ -121,6 +123,18 @@ export class App implements AfterViewInit, OnDestroy {
     }
   }
 
+  onVolumeChange(event: Event): void {
+    const input = event.target;
+    if (input instanceof HTMLInputElement) {
+      this.player.setVolume(Number(input.value) / 100);
+    }
+  }
+
+  handleTrackEnded(): void {
+    this.player.setPlaying(false);
+    this.player.playNext(true);
+  }
+
   progressPercent(): number {
     const duration = this.player.duration();
     return duration > 0 ? Math.min(100, Math.max(0, (this.player.currentTime() / duration) * 100)) : 0;
@@ -162,6 +176,8 @@ export class App implements AfterViewInit, OnDestroy {
         });
         instance.on(Hls.Events.MANIFEST_PARSED, () => {
           if (generation === this.playbackGeneration) {
+            audio.volume = this.player.volume();
+            audio.muted = this.player.isMuted();
             void audio.play().catch(() => {
               this.player.setError('Stream ready. Press play in the controls to start listening.');
             });

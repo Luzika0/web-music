@@ -2,6 +2,8 @@ import { Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MediaItem, MusicApiService } from './music-api.service';
 
+export type RepeatMode = 'off' | 'all' | 'one';
+
 @Injectable({ providedIn: 'root' })
 export class PlaybackService {
   readonly currentSong = signal<MediaItem | null>(null);
@@ -14,6 +16,11 @@ export class PlaybackService {
   readonly isPlaying = signal(false);
   readonly currentTime = signal(0);
   readonly duration = signal(0);
+  readonly volume = signal(1);
+  readonly isMuted = signal(false);
+  readonly isShuffled = signal(false);
+  readonly repeatMode = signal<RepeatMode>('off');
+
   private stopWatching: (() => void) | null = null;
   private requestGeneration = 0;
   private audioElement: HTMLAudioElement | null = null;
@@ -21,7 +28,21 @@ export class PlaybackService {
   constructor(
     private readonly api: MusicApiService,
     private readonly router: Router,
-  ) {}
+  ) {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const saved = window.localStorage.getItem('ksong.volume.v1');
+        if (saved !== null) {
+          const parsed = parseFloat(saved);
+          if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 1) {
+            this.volume.set(parsed);
+          }
+        }
+      }
+    } catch {
+      // Local storage unavailable
+    }
+  }
 
   coverColor(): string {
     const palette = [
@@ -36,7 +57,7 @@ export class PlaybackService {
     return palette[index % palette.length];
   }
 
-  async play(song: MediaItem, playlist?: readonly MediaItem[]): Promise<void> {
+  async play(song: MediaItem, playlist?: readonly MediaItem[], navigateToNowPlaying: boolean = false): Promise<void> {
     if (!song.id) {
       this.error.set('This track does not include a song ID, so it cannot be played.');
       return;
@@ -72,7 +93,9 @@ export class PlaybackService {
     this.isPlaying.set(false);
     this.currentTime.set(0);
     this.duration.set(0);
-    void this.router.navigate(['/now-playing']);
+    if (navigateToNowPlaying) {
+      void this.router.navigate(['/now-playing']);
+    }
     try {
       const session = await this.api.playbackSession(song.id);
       if (generation !== this.requestGeneration) {
@@ -109,11 +132,41 @@ export class PlaybackService {
     }
   }
 
-  playNext(): void {
-    const nextIndex = this.queueIndex() + 1;
-    const nextSong = this.queue()[nextIndex];
+  playNext(autoEnded: boolean = false): void {
+    const queue = this.queue();
+    if (!queue.length) return;
+
+    if (autoEnded && this.repeatMode() === 'one') {
+      if (this.audioElement) {
+        this.audioElement.currentTime = 0;
+        void this.audioElement.play().catch(() => {});
+        return;
+      }
+    }
+
+    if (this.isShuffled() && queue.length > 1) {
+      let nextIndex = Math.floor(Math.random() * queue.length);
+      if (nextIndex === this.queueIndex()) {
+        nextIndex = (nextIndex + 1) % queue.length;
+      }
+      const nextSong = queue[nextIndex];
+      if (nextSong) {
+        void this.play(nextSong, queue);
+        return;
+      }
+    }
+
+    let nextIndex = this.queueIndex() + 1;
+    if (nextIndex >= queue.length) {
+      if (this.repeatMode() === 'all') {
+        nextIndex = 0;
+      } else {
+        return;
+      }
+    }
+    const nextSong = queue[nextIndex];
     if (nextSong) {
-      void this.play(nextSong, this.queue());
+      void this.play(nextSong, queue);
     }
   }
 
@@ -128,12 +181,56 @@ export class PlaybackService {
     }
   }
 
+  setVolume(vol: number): void {
+    const clamped = Math.max(0, Math.min(1, vol));
+    this.volume.set(clamped);
+    if (clamped > 0 && this.isMuted()) {
+      this.isMuted.set(false);
+    }
+    if (this.audioElement) {
+      this.audioElement.volume = clamped;
+      this.audioElement.muted = this.isMuted();
+    }
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('ksong.volume.v1', clamped.toString());
+      }
+    } catch {
+      // Local storage unavailable
+    }
+  }
+
+  toggleMute(): void {
+    const next = !this.isMuted();
+    this.isMuted.set(next);
+    if (this.audioElement) {
+      this.audioElement.muted = next;
+    }
+  }
+
+  toggleShuffle(): void {
+    this.isShuffled.set(!this.isShuffled());
+  }
+
+  cycleRepeat(): void {
+    const current = this.repeatMode();
+    if (current === 'off') {
+      this.repeatMode.set('all');
+    } else if (current === 'all') {
+      this.repeatMode.set('one');
+    } else {
+      this.repeatMode.set('off');
+    }
+  }
+
   setError(message: string): void {
     this.error.set(message);
   }
 
   bindAudioElement(audio: HTMLAudioElement): void {
     this.audioElement = audio;
+    audio.volume = this.volume();
+    audio.muted = this.isMuted();
   }
 
   updateProgress(currentTime: number, duration: number): void {
