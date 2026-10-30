@@ -35,7 +35,7 @@ export class LibraryService {
       ? this.likedSongs().filter((item) => item.id !== song.id)
       : [song, ...this.likedSongs()];
     this.likedSongs.set(updated);
-    localStorage.setItem(LIBRARY_KEY, JSON.stringify(updated));
+    this.persist(updated);
   }
 
   removeLikedSong(songId: string): void {
@@ -45,6 +45,14 @@ export class LibraryService {
     const updated = this.likedSongs().filter((song) => song.id !== songId);
     this.likedSongs.set(updated);
     localStorage.setItem(LIBRARY_KEY, JSON.stringify(updated));
+  }
+
+  private persist(songs: MediaItem[]): void {
+    try {
+      localStorage.setItem(LIBRARY_KEY, JSON.stringify(songs));
+    } catch {
+      // Keep this device's in-memory collection usable if browser storage is blocked or full.
+    }
   }
 
   private loadLikedSongs(): MediaItem[] {
