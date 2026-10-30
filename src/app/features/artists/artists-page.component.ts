@@ -79,7 +79,8 @@ export class ArtistsPageComponent implements OnInit {
     }
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.searchText = params.get('search') ?? '';
-      this.pageNumber = 0;
+      const requestedPage = Number(params.get('page') ?? 0);
+      this.pageNumber = Number.isInteger(requestedPage) && requestedPage >= 0 ? requestedPage : 0;
       void this.load();
     });
   }
@@ -113,15 +114,24 @@ export class ArtistsPageComponent implements OnInit {
     }
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: this.searchText.trim() ? { search: this.searchText.trim() } : { search: null },
+      queryParams: {
+        search: term || null,
+        page: null,
+      },
       queryParamsHandling: 'merge',
       replaceUrl: false,
     });
   }
 
   changePage(delta: number): void {
-    this.pageNumber = Math.max(0, this.pageNumber + delta);
-    void this.load();
+    const nextPage = Math.max(0, this.pageNumber + delta);
+    if (nextPage === this.pageNumber) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: nextPage || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
   }
 
   canGoNext(): boolean {
