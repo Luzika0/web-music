@@ -84,6 +84,11 @@ export class LibraryService {
     this.playlists.update((items) => [playlist, ...items]);
   }
 
+  async updatePlaylist(id: string, name: string, description = ''): Promise<void> {
+    const updated = await this.api.updatePlaylist(id, { name, description });
+    this.playlists.update((items) => items.map((item) => item.id === id ? updated : item));
+  }
+
   async deletePlaylist(id: string): Promise<void> {
     await this.api.deletePlaylist(id);
     this.playlists.update((items) => items.filter((item) => item.id !== id));
