@@ -159,6 +159,8 @@ export class MusicApiService {
   private readonly mediaCache = inject(MediaCacheService);
   private readonly config = getAppConfig();
   private refreshFlight: Promise<string> | null = null;
+  private refreshFlightKey: string | null = null;
+  private sessionGeneration = 0;
   private session: SessionUser | null = this.loadSession();
 
   readonly user = signal<SessionUser | null>(this.session);
@@ -194,6 +196,7 @@ export class MusicApiService {
       throw new Error('The login response is missing data.token.acessToken, data.token.userId, or data.token.refreshToken.');
     }
 
+    this.sessionGeneration += 1;
     this.session = {
       id: String(userId),
       name: emailOrUserName,
@@ -485,21 +488,28 @@ export class MusicApiService {
   }
 
   private async refreshAccessToken(): Promise<string> {
-    if (!this.session?.refreshToken) {
+    const currentSession = this.session;
+    if (!currentSession?.refreshToken) {
       this.expireSession();
       throw new Error('Your session has expired. Please sign in again.');
     }
-    if (!this.refreshFlight) {
-      this.refreshFlight = this.performRefresh().finally(() => {
-        this.refreshFlight = null;
+    const generation = this.sessionGeneration;
+    const flightKey = `${generation}:${currentSession.id}:${currentSession.refreshToken}`;
+    if (!this.refreshFlight || this.refreshFlightKey !== flightKey) {
+      this.refreshFlightKey = flightKey;
+      this.refreshFlight = this.performRefresh(currentSession, generation).finally(() => {
+        if (this.refreshFlightKey === flightKey) {
+          this.refreshFlight = null;
+          this.refreshFlightKey = null;
+        }
       });
     }
     return this.refreshFlight;
   }
 
-  private async performRefresh(): Promise<string> {
+  private async performRefresh(currentSession: SessionUser, generation: number): Promise<string> {
     try {
-      const params = new HttpParams().set('refreshToken', this.session?.refreshToken ?? '');
+      const params = new HttpParams().set('refreshToken', currentSession.refreshToken);
       const response = await firstValueFrom(this.http.post<unknown>(
         this.absoluteUrl('/api/auth/refresh-token'),
         null,
@@ -510,8 +520,10 @@ export class MusicApiService {
         throw new Error('The refresh response is missing data.newAcessToken.');
       }
 
-      if (!this.session) {
-        throw new Error('The session ended during token refresh.');
+      if (this.sessionGeneration !== generation
+        || this.session?.id !== currentSession.id
+        || this.session.refreshToken !== currentSession.refreshToken) {
+        throw new Error('The signed-in account changed during token refresh. Retry the request.');
       }
       this.session = { ...this.session, accessToken };
       this.persistSession();
@@ -520,7 +532,10 @@ export class MusicApiService {
     } catch (error) {
       // Only explicit 401/403 responses prove the refresh credential is rejected.
       // Network errors, CORS failures and 5xx responses are temporary.
-      if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) {
+      if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)
+        && this.sessionGeneration === generation
+        && this.session?.id === currentSession.id
+        && this.session.refreshToken === currentSession.refreshToken) {
         this.expireSession();
       }
       throw new Error(`Your session could not be refreshed. ${this.errorMessage(error)}`);
@@ -703,6 +718,7 @@ export class MusicApiService {
   }
 
   private clearSession(): void {
+    this.sessionGeneration += 1;
     this.session = null;
     this.user.set(null);
     if (isPlatformBrowser(this.platformId)) {
