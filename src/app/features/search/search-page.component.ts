@@ -129,7 +129,7 @@ export class SearchPageComponent implements OnInit {
       relativeTo: this.route,
       queryParams: { q: null },
       queryParamsHandling: 'merge',
-      replaceUrl: true,
+      replaceUrl: false,
     });
   }
 
