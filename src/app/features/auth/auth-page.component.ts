@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { MusicApiService } from '../../core/services/music-api.service';
+import { PlaybackService } from '../../core/services/playback.service';
 
 type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-password';
 
@@ -256,6 +257,7 @@ export class AuthPageComponent implements OnInit {
           const safeNext = requested?.startsWith('/') && !requested.startsWith('//') ? requested : null;
           const destination = safeNext ?? (this.api.isAdmin() ? '/admin' : '/');
           await this.router.navigateByUrl(destination);
+          await this.playback.resumePendingPlayback();
           break;
         }
         case 'forgot-password':
