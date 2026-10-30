@@ -129,6 +129,58 @@ describe('AuthPageComponent', () => {
     fixture.destroy();
   });
 
+  it('redirects to login after a successful password reset', async () => {
+    const api = {
+      resetPassword: vi.fn().mockResolvedValue(undefined),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    await TestBed.configureTestingModule({
+      imports: [AuthPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: MusicApiService, useValue: api },
+      ],
+    }).compileComponents();
+
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(AuthPageComponent);
+    fixture.componentInstance.mode = 'reset-password';
+    fixture.componentInstance.email = 'listener@example.com';
+    fixture.componentInstance.otp = '123456';
+    fixture.componentInstance.password = 'new-password-123';
+
+    await fixture.componentInstance.submit();
+
+    expect(api.resetPassword).toHaveBeenCalledWith('listener@example.com', '123456', 'new-password-123');
+    expect(router.navigate).toHaveBeenCalledWith(['/login'], {
+      queryParams: { passwordReset: '1' },
+      replaceUrl: true,
+    });
+    expect(fixture.componentInstance.password).toBe('');
+    expect(fixture.componentInstance.otp).toBe('');
+    fixture.destroy();
+  });
+
+  it('shows a password-reset success message on the login page', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AuthPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: MusicApiService, useValue: {} },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AuthPageComponent);
+    fixture.componentInstance.mode = 'login';
+    fixture.componentInstance.success = 'Your password has been reset successfully. Sign in with your new password.';
+    fixture.detectChanges();
+
+    const success = (fixture.nativeElement as HTMLElement).querySelector('.success-alert');
+    expect(success?.textContent).toContain('password has been reset successfully');
+    fixture.destroy();
+  });
+
   it('sends an admin to the creator studio after login', async () => {
     const api = {
       login: vi.fn().mockResolvedValue(undefined),
