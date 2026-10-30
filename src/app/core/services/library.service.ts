@@ -1,11 +1,13 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, effect, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { MediaItem, MusicApiService, PlaylistItem } from './music-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class LibraryService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly api = inject(MusicApiService);
+  private readonly router = inject(Router);
 
   readonly likedSongs = signal<MediaItem[]>([]);
   readonly playlists = signal<PlaylistItem[]>([]);
@@ -55,7 +57,11 @@ export class LibraryService {
   }
 
   toggleLike(song: MediaItem): void {
-    if (!song.id || song.kind !== 'song' || !this.api.user()) return;
+    if (!song.id || song.kind !== 'song') return;
+    if (!this.api.user()) {
+      void this.router.navigate(['/login'], { queryParams: { next: '/liked' } });
+      return;
+    }
     const wasLiked = this.isLiked(song.id);
     const previous = this.likedSongs();
     this.likedSongs.set(wasLiked
