@@ -1026,7 +1026,7 @@ describe('LibraryService', () => {
     api.addFavorite.mockClear();
     api.removeFavorite.mockClear();
     TestBed.configureTestingModule({
-      providers: [{ provide: MusicApiService, useValue: api }],
+      providers: [provideRouter([]), { provide: MusicApiService, useValue: api }],
     });
     library = TestBed.inject(LibraryService);
     await vi.waitFor(() => expect(api.favoriteSongs).toHaveBeenCalled());
