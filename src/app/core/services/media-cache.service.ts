@@ -7,7 +7,7 @@ const DATABASE_VERSION = 1;
 const DATABASE_STORE = 'sqlite';
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_IMAGE_CACHE_BYTES = 48 * 1024 * 1024;
-const MAX_CACHED_PAGE_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const MAX_CACHED_PAGE_AGE_MS = 30 * 24 * 60 * 60 * 1000;\nexport const PAGE_CACHE_FRESH_MS = 10 * 60 * 1000;\nexport const IMAGE_CACHE_FRESH_MS = 30 * 24 * 60 * 60 * 1000;\n\nexport interface CacheEntry<T> { value: T; cachedAt: number; }
 
 @Injectable({ providedIn: 'root' })
 export class MediaCacheService {
@@ -23,19 +23,32 @@ export class MediaCacheService {
   private savedVersion = 0;
   private persisting = false;
 
-  async getPage<T>(userId: string, key: string): Promise<T | null> {
+  async getPageEntry<T>(userId: string, key: string): Promise<CacheEntry<T> | null> {
     const database = await this.database();
     const statement = database.prepare(
-      'SELECT payload FROM media_pages WHERE user_id = ? AND cache_key = ? AND cached_at >= ?',
+      'SELECT payload, cached_at FROM media_pages WHERE user_id = ? AND cache_key = ? AND cached_at >= ?',
       [userId, key, Date.now() - MAX_CACHED_PAGE_AGE_MS],
     );
     try {
       if (!statement.step()) return null;
-      const payload = statement.getAsObject()['payload'];
-      return typeof payload === 'string' ? JSON.parse(payload) as T : null;
+      const row = statement.getAsObject();
+      const payload = row['payload'];
+      const cachedAt = row['cached_at'];
+      if (typeof payload !== 'string' || typeof cachedAt !== 'number') return null;
+      return { value: JSON.parse(payload) as T, cachedAt };
     } finally {
       statement.free();
     }
+  }
+
+  async getPage<T>(userId: string, key: string): Promise<T | null> {
+    return (await this.getPageEntry<T>(userId, key))?.value ?? null;
+  }
+
+  async deletePage(userId: string, key: string): Promise<void> {
+    const database = await this.database();
+    database.run('DELETE FROM media_pages WHERE user_id = ? AND cache_key = ?', [userId, key]);
+    await this.persist(database);
   }
 
   async setPage(userId: string, key: string, value: unknown): Promise<void> {
@@ -50,25 +63,33 @@ export class MediaCacheService {
     await this.persist(database);
   }
 
-  async getImage(userId: string, imageKey: string): Promise<Blob | null> {
+  async getImageEntry(userId: string, imageKey: string): Promise<CacheEntry<Blob> | null> {
     const database = await this.database();
     const statement = database.prepare(
-      'SELECT mime_type, image_data FROM cached_images WHERE user_id = ? AND image_key = ?',
+      'SELECT mime_type, image_data, cached_at FROM cached_images WHERE user_id = ? AND image_key = ?',
       [userId, imageKey],
     );
     try {
       if (!statement.step()) return null;
       const row = statement.getAsObject();
       const data = row['image_data'];
-      if (!(data instanceof Uint8Array)) return null;
+      const cachedAt = row['cached_at'];
+      if (!(data instanceof Uint8Array) || typeof cachedAt !== 'number') return null;
       const bytes = new Uint8Array(data.byteLength);
       bytes.set(data);
-      return new Blob([bytes.buffer], {
-        type: typeof row['mime_type'] === 'string' ? row['mime_type'] : 'application/octet-stream',
-      });
+      return {
+        value: new Blob([bytes.buffer], {
+          type: typeof row['mime_type'] === 'string' ? row['mime_type'] : 'application/octet-stream',
+        }),
+        cachedAt,
+      };
     } finally {
       statement.free();
     }
+  }
+
+  async getImage(userId: string, imageKey: string): Promise<Blob | null> {
+    return (await this.getImageEntry(userId, imageKey))?.value ?? null;
   }
 
   async setImage(userId: string, imageKey: string, image: Blob): Promise<void> {
