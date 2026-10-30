@@ -49,7 +49,7 @@ import { getAppConfig } from '../../core/config/app-config';
       @if (artistsError) {
         <div class="inline-alert error-alert" role="alert">{{ artistsError }} <button type="button" class="text-button" (click)="loadArtists()">Try again</button></div>
       } @else if (artistsLoading && !artistsPage) {
-        <div class="artist-grid" aria-label="Loading artists">
+        <div class="artist-grid" role="status" aria-label="Loading artists">
           @for (placeholder of placeholders; track placeholder) {
             <div class="artist-card skeleton-card"><div class="skeleton artist-skeleton"></div><div class="skeleton line-skeleton"></div></div>
           }
@@ -71,7 +71,7 @@ import { getAppConfig } from '../../core/config/app-config';
         @if (artistsPage?.totalPages !== 1) {
           <div class="pagination">
             <button type="button" class="button button-quiet" (click)="changeArtistPage(-1)" [disabled]="artistPage === 0 || artistsLoading">← Previous</button>
-            <span>Page {{ artistPage + 1 }}{{ artistsPage?.totalPages ? ' of ' + artistsPage?.totalPages : '' }}</span>
+            <span aria-live="polite" aria-atomic="true">Page {{ artistPage + 1 }}{{ artistsPage?.totalPages ? ' of ' + artistsPage?.totalPages : '' }}</span>
             <button type="button" class="button button-quiet" (click)="changeArtistPage(1)" [disabled]="artistsLoading || !canGoNext(artistsPage)">Next →</button>
           </div>
         }
@@ -88,7 +88,7 @@ import { getAppConfig } from '../../core/config/app-config';
       @if (songsError) {
         <div class="inline-alert error-alert" role="alert">{{ songsError }} <button type="button" class="text-button" (click)="loadSongs()">Try again</button></div>
       } @else if (songsLoading && !songsPage) {
-        <div class="song-list" aria-label="Loading songs">
+        <div class="song-list" role="status" aria-label="Loading songs">
           @for (placeholder of placeholders; track placeholder) {
             <div class="song-row"><span class="skeleton song-skeleton"></span><span class="skeleton line-skeleton"></span><span class="skeleton line-skeleton short-line"></span></div>
           }
@@ -124,7 +124,7 @@ import { getAppConfig } from '../../core/config/app-config';
         @if (songsPage?.totalPages !== 1) {
           <div class="pagination">
             <button type="button" class="button button-quiet" (click)="changeSongPage(-1)" [disabled]="songPage === 0 || songsLoading">← Previous</button>
-            <span>Page {{ songPage + 1 }}{{ songsPage?.totalPages ? ' of ' + songsPage?.totalPages : '' }}</span>
+            <span aria-live="polite" aria-atomic="true">Page {{ songPage + 1 }}{{ songsPage?.totalPages ? ' of ' + songsPage?.totalPages : '' }}</span>
             <button type="button" class="button button-quiet" (click)="changeSongPage(1)" [disabled]="songsLoading || !canGoNext(songsPage)">Next →</button>
           </div>
         }
