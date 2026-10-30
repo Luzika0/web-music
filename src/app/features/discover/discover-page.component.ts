@@ -40,7 +40,7 @@ import { getAppConfig } from '../../core/config/app-config';
           <label class="sr-only" for="artist-search">Search artists</label>
           <input id="artist-search" name="artistSearch" type="search" [(ngModel)]="artistSearch"
             placeholder="Search artists" autocomplete="off" />
-          <button type="submit" class="button button-light" [disabled]="artistsLoading" [attr.aria-busy]="artistsLoading">
+          <button type="submit" class="button button-light" [attr.aria-busy]="artistsLoading">
             @if (artistsLoading) { <span class="button-loading-spinner" aria-hidden="true"></span> }
             <span>{{ artistsLoading ? 'Searching…' : 'Search' }}</span>
           </button>
