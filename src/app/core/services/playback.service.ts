@@ -296,7 +296,10 @@ export class PlaybackService {
     this.requestGeneration += 1;
     this.stopWatching?.();
     this.stopWatching = null;
+    this.pendingPlayback = null;
     this.currentSong.set(null);
+    this.queue.set([]);
+    this.queueIndex.set(-1);
     this.manifestUrl.set('');
     this.token.set('');
     this.loading.set(false);
