@@ -909,9 +909,84 @@ describe('LibraryService', () => {
   });
 });
 
+describe('PlaybackService authentication before playback', () => {
+  it('redirects signed-out users to login without creating a playback session', async () => {
+    const api = {
+      user: vi.fn(() => null),
+      playbackSession: vi.fn(),
+      playbackStatus: vi.fn(),
+      watchPlaybackEvents: vi.fn(),
+      absoluteUrl: vi.fn((path: string) => path),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    const router = {
+      url: '/discover',
+      navigate: vi.fn(async () => true),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: router },
+        { provide: MusicApiService, useValue: api },
+      ],
+    });
+    const playback = TestBed.inject(PlaybackService);
+    const song: MediaItem = {
+      id: 'song-guest', artistId: 'artist-1', name: 'Guest track',
+      artistName: 'Artist', imageKey: '', kind: 'song',
+    };
+
+    await playback.play(song, [song]);
+
+    expect(router.navigate).toHaveBeenCalledWith(['/login'], {
+      queryParams: { next: '/discover', signInToPlay: '1' },
+    });
+    expect(api.playbackSession).not.toHaveBeenCalled();
+    expect(playback.currentSong()).toBeNull();
+    expect(playback.queue()).toEqual([]);
+  });
+
+  it('resumes a pending track only after a user has signed in', async () => {
+    let signedIn = false;
+    const api = {
+      user: vi.fn(() => signedIn ? ({ id: 'user-1' }) : null),
+      playbackSession: vi.fn(async (songId: string) => ({
+        token: `token-${songId}`, sessionId: 'session-1',
+        expiresAt: '2099-01-01T00:00:00Z', songId,
+      })),
+      playbackStatus: vi.fn(async () => true),
+      watchPlaybackEvents: vi.fn(() => () => {}),
+      absoluteUrl: vi.fn((path: string) => path),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    const router = { url: '/discover', navigate: vi.fn(async () => true) };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: router },
+        { provide: MusicApiService, useValue: api },
+      ],
+    });
+    const playback = TestBed.inject(PlaybackService);
+    const song: MediaItem = {
+      id: 'song-after-login', artistId: 'artist-1', name: 'After login',
+      artistName: 'Artist', imageKey: '', kind: 'song',
+    };
+
+    await playback.play(song);
+    expect(api.playbackSession).not.toHaveBeenCalled();
+    signedIn = true;
+    await playback.resumePendingPlayback();
+
+    expect(api.playbackSession).toHaveBeenCalledWith(song.id);
+    expect(playback.currentSong()?.id).toBe(song.id);
+    expect(playback.manifestUrl()).toContain('/song/song-after-login/hls/index.m3u8');
+    playback.stop();
+  });
+});
+
 describe('PlaybackService queue', () => {
   it('plays tracks in sequence and supports previous and next selection', async () => {
     const api = {
+      user: vi.fn(() => ({ id: 'user-1' })),
       playbackSession: vi.fn(async (songId: string) => ({
         token: `token-${songId}`,
         sessionId: `session-${songId}`,
@@ -973,6 +1048,7 @@ describe('PlaybackService latest request state', () => {
     const firstSession = new Promise<ReturnType<typeof makeSession>>((resolve) => resolveFirst = resolve);
     const secondSession = new Promise<ReturnType<typeof makeSession>>((resolve) => resolveSecond = resolve);
     const api = {
+      user: vi.fn(() => ({ id: 'user-1' })),
       playbackSession: vi.fn()
         .mockImplementationOnce(() => firstSession)
         .mockImplementationOnce(() => secondSession),
