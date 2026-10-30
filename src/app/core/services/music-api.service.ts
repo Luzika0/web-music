@@ -314,14 +314,25 @@ export class MusicApiService {
 
   async createArtist(form: FormData): Promise<void> {
     await this.request('POST', '/api/auth/admin/create-artist', { body: form, authenticated: true });
+    await this.invalidateCatalogCache();
   }
 
   async uploadSong(form: FormData): Promise<void> {
     await this.request('POST', '/api/auth/admin/upload-song', { body: form, authenticated: true });
+    await this.invalidateCatalogCache();
   }
 
   async deleteSong(songId: string): Promise<void> {
     await this.request('DELETE', `/api/auth/admin/delete-song/${encodeURIComponent(songId)}`, { authenticated: true });
+    await this.invalidateCatalogCache();
+  }
+
+  private async invalidateCatalogCache(): Promise<void> {
+    try {
+      await this.mediaCache.invalidateCatalog();
+    } catch {
+      this.mediaCache.reportUnavailable();
+    }
   }
 
 
