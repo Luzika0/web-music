@@ -130,8 +130,7 @@ export class LibraryPageComponent {
   async saveEdit(event: Event, id: string): Promise<void> {
     event.preventDefault();
     try {
-      const updated = await this.library['api'].updatePlaylist(id, { name: this.editName().trim(), description: this.editDescription().trim() });
-      this.library.playlists.update(items => items.map(item => item.id === id ? updated : item));
+      await this.library.updatePlaylist(id, this.editName().trim(), this.editDescription().trim());
       this.editingId.set(null);
     } catch (error) {
       this.library.error.set(error instanceof Error ? error.message : 'Could not update playlist.');
