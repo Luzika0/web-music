@@ -244,6 +244,7 @@ describe('MediaCacheService', () => {
 describe('authenticated route access', () => {
   let api: MusicApiService;
   let router: Router;
+  let http: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -251,6 +252,7 @@ describe('authenticated route access', () => {
     });
     api = TestBed.inject(MusicApiService);
     router = TestBed.inject(Router);
+    http = TestBed.inject(HttpTestingController);
   });
 
   it('redirects signed-out users to login with their requested page', async () => {
@@ -262,19 +264,27 @@ describe('authenticated route access', () => {
     }
   });
 
-  it('redirects to login when refresh-token validation fails', async () => {
-    api.user.set({
-      id: 'user-1',
-      name: 'Listener',
-      email: 'listener@example.com',
-      accessToken: 'access',
-      refreshToken: 'expired-refresh-token',
-      permissions: [],
+  it('redirects to login when the backend rejects an expired session refresh', async () => {
+    const expiredAccess = `header.${btoa(JSON.stringify({ exp: 1 }))}.signature`;
+    const login = api.login('listener', 'secret');
+    http.expectOne('/api/auth/log-in').flush({
+      data: { token: { acessToken: expiredAccess, userId: 'user-1', refreshToken: 'expired-refresh-token' } },
     });
-    const result = await requireAuthenticatedSession(api, router, '/now-playing');
+    await login;
+
+    const guardedRoute = requireAuthenticatedSession(api, router, '/now-playing');
+    http.expectOne('/api/auth/refresh-token').flush(
+      { message: 'Refresh token expired' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
+    const result = await guardedRoute;
+
     expect(result).not.toBe(true);
+    if (result !== true) {
+      expect(router.serializeUrl(result)).toBe('/login?next=%2Fnow-playing');
+    }
   });
-});
+});});
 
 describe('MusicApiService', () => {
   let api: MusicApiService;
