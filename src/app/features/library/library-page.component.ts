@@ -39,14 +39,14 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
         @if (loading) {
           <div class="inline-alert info-alert" role="status">Loading your playlists…</div>
         } @else if (library.playlists().length) {
-          <div class="demo-playlist-grid">
+          <div class="playlist-grid">
             @for (playlist of library.playlists(); track playlist.playlistId) {
-              <article class="demo-playlist-card" [class.is-selected]="selected?.playlistId === playlist.playlistId">
+              <article class="playlist-card" [class.is-selected]="selected?.playlistId === playlist.playlistId">
                 <button class="playlist-open" type="button" (click)="open(playlist)">
-                  <span class="demo-playlist-art" aria-hidden="true">♫</span>
+                  <span class="playlist-art" aria-hidden="true">♫</span>
                   <p class="eyebrow">YOUR PLAYLIST</p><h3>{{ playlist.name }}</h3>
                   <p>{{ playlist.description || 'No description' }}</p>
-                  <span class="demo-playlist-note">{{ playlist.songIds.length }} {{ playlist.songIds.length === 1 ? 'song' : 'songs' }}</span>
+                  <span class="playlist-note">{{ playlist.songIds.length }} {{ playlist.songIds.length === 1 ? 'song' : 'songs' }}</span>
                 </button>
                 <button class="text-button" type="button" (click)="beginEdit(playlist)">Edit</button>
                 <button class="text-button" type="button" (click)="removePlaylist(playlist)">Delete</button>
