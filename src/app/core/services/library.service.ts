@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, effect, inject, signal } from '@angular/core';
 import { MediaItem, MusicApiService } from './music-api.service';
 
 export interface UserPlaylist {
