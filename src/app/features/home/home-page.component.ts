@@ -45,7 +45,7 @@ import { textLanguage } from '../../shared/utils/text-language';
         <a class="section-link" routerLink="/search">Find more <span aria-hidden="true">→</span></a>
       </div>
       @if (loading) {
-        <div class="home-song-grid" aria-label="Loading music">
+        <div class="home-song-grid" role="status" aria-label="Loading music">
           @for (placeholder of placeholders; track placeholder) { <div class="home-song-card"><span class="skeleton home-cover-skeleton"></span><span class="skeleton line-skeleton"></span></div> }
         </div>
       } @else if (error) {
