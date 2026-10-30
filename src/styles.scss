@@ -3984,7 +3984,8 @@ button, a { touch-action: manipulation; }
     min-width: 36px;
     min-height: 38px;
   }
-  .topbar .main-nav { grid-template-columns: repeat(6, minmax(0,1fr)); padding-inline: 2px; }
+  /* Admin adds a seventh destination on mobile; size columns to the actual visible links. */
+  .topbar .main-nav { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); padding-inline: 2px; }
   .topbar .main-nav a { font-size: 8px; }
   .home-hero { padding-inline: 16px; }
   .home-copy h1,
@@ -4297,3 +4298,58 @@ button, a { touch-action: manipulation; }
 :root[data-theme="light"] .auth-layout .back-link { color: #4e5870; }
 :root[data-theme="light"] .auth-layout .eyebrow { color: #4e5870; }
 :root[data-theme="light"] .auth-layout .inline-alert { box-shadow: none; }
+
+
+/* Final interaction polish: clear icon feedback without hiding accessible names. */
+.like-button svg,
+.player-like-btn svg {
+  transform-origin: center;
+  transition: transform 220ms cubic-bezier(.2,.75,.25,1), fill 180ms ease, stroke 180ms ease;
+}
+.like-button.liked svg,
+.player-like-btn.liked svg {
+  animation: icon-heart 360ms cubic-bezier(.2,.75,.25,1);
+}
+.like-button:active:not(:disabled) svg,
+.player-like-btn:active:not(:disabled) svg {
+  transform: scale(.84);
+}
+.play-button,
+.home-cover,
+.song-cover,
+.now-playing-toggle,
+.player-control {
+  transition: transform 180ms cubic-bezier(.2,.75,.25,1), background-color 180ms ease, box-shadow 180ms ease;
+}
+.play-button:hover:not(:disabled),
+.now-playing-toggle:hover:not(:disabled),
+.player-control:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.04);
+}
+.home-song-card:focus-within,
+.directory-artist:focus-within,
+.demo-playlist-card:focus-within {
+  border-color: color-mix(in srgb, var(--brand-accent, #8de6c1) 48%, transparent);
+}
+:where(.main-nav a, .account-nav button, .player-control, .like-button, .play-button) {
+  touch-action: manipulation;
+}
+@media (max-width: 700px) {
+  .topbar .main-nav a {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .like-button svg,
+  .player-like-btn svg,
+  .play-button,
+  .home-cover,
+  .song-cover,
+  .now-playing-toggle,
+  .player-control {
+    animation: none !important;
+    transition: none !important;
+  }
+}
