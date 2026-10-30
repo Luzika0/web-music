@@ -126,9 +126,13 @@ export class PlaybackService {
       );
       this.manifestUrl.set(this.api.absoluteUrl(`/api/auth/song/${encodeURIComponent(song.id)}/hls/index.m3u8`));
     } catch (error) {
-      this.error.set(this.api.toUserMessage(error));
+      if (generation === this.requestGeneration) {
+        this.error.set(this.api.toUserMessage(error));
+      }
     } finally {
-      this.loading.set(false);
+      if (generation === this.requestGeneration) {
+        this.loading.set(false);
+      }
     }
   }
 
