@@ -19,7 +19,7 @@ import { getAppConfig } from '../../core/config/app-config';
         <p class="eyebrow">YOUR NEXT FAVORITE IS HERE</p>
         <h1>A little more <em>music.</em><br />A lot more you.</h1>
         <p class="hero-lead">Find the sounds that feel like your own. Fresh voices, familiar moods, all in one place.</p>
-        <a class="button button-light hero-action" routerLink="/register">Find your sound <span aria-hidden="true">↗</span></a>
+        <a class="button button-light hero-action" [routerLink]="api.user() ? '/search' : '/register'">{{ api.user() ? 'Explore music' : 'Find your sound' }} <span aria-hidden="true">↗</span></a>
       </div>
       <div class="hero-art" aria-hidden="true">
         <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
