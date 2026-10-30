@@ -44,7 +44,7 @@ export class LibraryService {
     }
     const updated = this.likedSongs().filter((song) => song.id !== songId);
     this.likedSongs.set(updated);
-    localStorage.setItem(LIBRARY_KEY, JSON.stringify(updated));
+    this.persist(updated);
   }
 
   private persist(songs: MediaItem[]): void {
