@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, MusicApiService } from '../../core/services/music-api.service';
 import { PlaybackService } from '../../core/services/playback.service';
@@ -26,6 +26,7 @@ import { textLanguage } from '../../shared/utils/text-language';
           @if (loading) { <span class="button-loading-spinner" aria-hidden="true"></span> }
           <span>{{ loading ? 'Searching…' : 'Search' }}</span>
         </button>
+        @if (query) { <button class="button button-quiet search-clear-button" type="button" (click)="clearSearch()" [disabled]="loading">Clear</button> }
       </form>
 
       @if (error) {
@@ -78,6 +79,7 @@ export class SearchPageComponent implements OnInit {
   readonly textLanguage = textLanguage;
   private readonly api = inject(MusicApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly pageSize = getAppConfig().pageSize;
   query = '';
   songs: MediaItem[] = [];
@@ -89,13 +91,47 @@ export class SearchPageComponent implements OnInit {
   private searchGeneration = 0;
 
   ngOnInit(): void {
-    this.query = this.route.snapshot.queryParamMap.get('q') ?? '';
-    if (this.query.trim()) void this.search();
+    this.route.queryParamMap.subscribe((params) => {
+      this.query = params.get('q') ?? '';
+      const term = this.query.trim();
+      if (term) void this.runSearch(term);
+      else {
+        this.searchGeneration += 1;
+        this.songs = [];
+        this.artists = [];
+        this.loading = false;
+        this.hasSearched = false;
+        this.error = '';
+        this.partialError = '';
+      }
+    });
   }
 
-  async search(): Promise<void> {
+  search(): void {
     const term = this.query.trim();
-    if (!term) return;
+    if (!term) {
+      this.clearSearch();
+      return;
+    }
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { q: term },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  clearSearch(): void {
+    this.query = '';
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { q: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private async runSearch(term: string): Promise<void> {
     const generation = ++this.searchGeneration;
     this.loading = true;
     this.hasSearched = true;
