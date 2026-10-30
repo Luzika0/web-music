@@ -63,7 +63,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
             <p>{{ selected.description }}</p>
             <form class="library-create-form" (ngSubmit)="addSong()">
               <label for="song-search">Find a song in the catalog</label>
-              <input id="song-search" name="songSearch" [(ngModel)]="songSearch" placeholder="Search song or artist">
+              <input id="song-search" name="songSearch" [(ngModel)]="songSearch" (ngModelChange)="searchCatalog($event)" placeholder="Search song or artist">
               <label for="song-id">Choose song</label>
               <select id="song-id" name="songId" [(ngModel)]="songId" required>
                 <option value="" disabled>Select a song</option>
@@ -118,6 +118,19 @@ export class LibraryPageComponent implements OnInit {
   songId = '';
   songSearch = '';
   songCatalog: MediaItem[] = [];
+  private catalogSearchGeneration = 0;
+
+  async searchCatalog(term: string): Promise<void> {
+    const generation = ++this.catalogSearchGeneration;
+    try {
+      const result = await this.api.songs(0, 50, term);
+      if (generation === this.catalogSearchGeneration) this.songCatalog = result.items;
+    } catch (error) {
+      if (generation === this.catalogSearchGeneration) this.error = this.api.toUserMessage(error);
+    } finally {
+      this.changeDetector.markForCheck();
+    }
+  }
 
   get filteredSongOptions(): MediaItem[] {
     const term = this.songSearch.trim().toLocaleLowerCase();

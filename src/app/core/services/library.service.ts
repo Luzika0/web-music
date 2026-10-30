@@ -69,22 +69,41 @@ export class LibraryService {
   readonly loadingFavorites = signal(false);
   readonly loadingPlaylists = signal(false);
   readonly error = signal('');
+  private favoriteLoadGeneration = 0;
+  private playlistLoadGeneration = 0;
 
   isLiked(songId: string): boolean {
     return !!songId && this.likedSongs().some(song => song.id === songId);
   }
 
+  clearAccountState(): void {
+    this.favoriteLoadGeneration += 1;
+    this.playlistLoadGeneration += 1;
+    this.loadingFavorites.set(false);
+    this.loadingPlaylists.set(false);
+    this.likedSongs.set([]);
+    this.playlists.set([]);
+    this.error.set('');
+  }
+
   async loadFavorites(): Promise<void> {
-    if (!this.api.user()) { this.likedSongs.set([]); return; }
+    const userId = this.api.user()?.id;
+    if (!userId) { this.clearAccountState(); return; }
+    const generation = ++this.favoriteLoadGeneration;
     this.loadingFavorites.set(true);
     this.error.set('');
     try {
-      this.likedSongs.set(await this.api.libraryFavorites());
+      const favorites = await this.api.libraryFavorites();
+      if (generation === this.favoriteLoadGeneration && this.api.user()?.id === userId) {
+        this.likedSongs.set(favorites);
+      }
     } catch (error) {
-      this.error.set(this.api.toUserMessage(error));
+      if (generation === this.favoriteLoadGeneration && this.api.user()?.id === userId) {
+        this.error.set(this.api.toUserMessage(error));
+      }
       throw error;
     } finally {
-      this.loadingFavorites.set(false);
+      if (generation === this.favoriteLoadGeneration) this.loadingFavorites.set(false);
     }
   }
 
@@ -103,17 +122,23 @@ export class LibraryService {
   }
 
   async loadPlaylists(): Promise<void> {
-    if (!this.api.user()) { this.playlists.set([]); return; }
+    const userId = this.api.user()?.id;
+    if (!userId) { this.playlists.set([]); return; }
+    const generation = ++this.playlistLoadGeneration;
     this.loadingPlaylists.set(true);
     this.error.set('');
     try {
       const data = unwrapData(await this.api.libraryPlaylists());
-      this.playlists.set(Array.isArray(data) ? data.map(playlistFrom).filter((item): item is UserPlaylist => item !== null) : []);
+      if (generation === this.playlistLoadGeneration && this.api.user()?.id === userId) {
+        this.playlists.set(Array.isArray(data) ? data.map(playlistFrom).filter((item): item is UserPlaylist => item !== null) : []);
+      }
     } catch (error) {
-      this.error.set(this.api.toUserMessage(error));
+      if (generation === this.playlistLoadGeneration && this.api.user()?.id === userId) {
+        this.error.set(this.api.toUserMessage(error));
+      }
       throw error;
     } finally {
-      this.loadingPlaylists.set(false);
+      if (generation === this.playlistLoadGeneration) this.loadingPlaylists.set(false);
     }
   }
 
