@@ -24,7 +24,7 @@ import { LibraryService } from '../../core/services/library.service';
       <div class="demo-playlist-grid">
         @for (playlist of playlists; track playlist.name) {
           <article class="demo-playlist-card" [style.--playlist-color]="playlist.color">
-            <span class="demo-playlist-art" aria-hidden="true">{{ playlist.symbol }}</span>
+            <span class="demo-playlist-art" aria-hidden="true"><app-icon [name]="playlist.symbol" size="30" /></span>
             <p class="eyebrow">K-SONG MIX · DEMO</p><h3>{{ playlist.name }}</h3><p>{{ playlist.description }}</p>
             <span class="demo-playlist-note">Sample collection · No songs are connected</span>
           </article>
@@ -37,8 +37,8 @@ export class LibraryPageComponent {
   readonly library = inject(LibraryService);
   readonly player = inject(PlaybackService);
   readonly playlists = [
-    { name: 'Soft Focus', description: 'A little room to breathe.', symbol: '◌', color: '#674d88' },
-    { name: 'After Hours', description: 'For the city after dark.', symbol: '☾', color: '#a65b63' },
-    { name: 'New Day', description: 'Find your first good thing.', symbol: '☼', color: '#a17842' },
-  ];
+    { name: 'Soft Focus', description: 'A little room to breathe.', symbol: 'disc', color: '#674d88' },
+    { name: 'After Hours', description: 'For the city after dark.', symbol: 'moon', color: '#a65b63' },
+    { name: 'New Day', description: 'Find your first good thing.', symbol: 'sun', color: '#a17842' },
+  ] as const;
 }
