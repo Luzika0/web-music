@@ -300,7 +300,7 @@ describe('SearchPageComponent SSR behavior', () => {
     }).compileComponents();
 
     const fixture = TestBed.createComponent(SearchPageComponent);
-    fixture.detectChanges();
+    fixture.componentInstance.ngOnInit();
 
     expect(fixture.componentInstance.query).toBe('night drive');
     expect(api.songs).not.toHaveBeenCalled();
