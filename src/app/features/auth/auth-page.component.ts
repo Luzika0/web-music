@@ -4,22 +4,23 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { MusicApiService } from '../../core/services/music-api.service';
 import { PlaybackService } from '../../core/services/playback.service';
+import { AppIconComponent } from '../../shared/components/app-icon.component';
 
 type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-password';
 
 @Component({
   selector: 'app-auth-page',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, AppIconComponent],
   template: `
     <section class="auth-layout" [attr.data-auth-mode]="mode" aria-labelledby="auth-title">
       <div class="auth-art" aria-hidden="true">
-        <span class="auth-disc"></span><svg class="auth-note" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm12-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z" /></svg>
+        <span class="auth-disc"></span><app-icon name="music" class="auth-note" />
         <p>Every good thing<br />starts with a song.</p>
         <span class="auth-art-small">A HOME FOR THE SOUNDTRACK OF YOU</span>
       </div>
       <div class="auth-panel">
         <a class="back-link" routerLink="/" (click)="cancelPendingPlayback()">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6M9 12h11" /></svg>
+          <app-icon name="previous" />
           <span>Back to discovery</span>
         </a>
         <p class="eyebrow">{{ eyebrow }}</p>
@@ -57,9 +58,9 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
                 [attr.aria-label]="passwordVisible ? 'Hide password' : 'Show password'"
                 [title]="passwordVisible ? 'Hide password' : 'Show password'">
                 @if (passwordVisible) {
-                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.7 10.7 0 0 1 12 5c5.2 0 8.5 5.2 8.5 7a8.8 8.8 0 0 1-2.2 3.2M6.2 6.2C3.9 7.7 2.5 10.2 2.5 12c0 1.8 3.3 7 9.5 7a10.7 10.7 0 0 0 3.4-.6" /></svg>
+                  <app-icon name="eyeOff" />
                 } @else {
-                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2.5 12s3.3-7 9.5-7 9.5 7 9.5 7-3.3 7-9.5 7-9.5-7-9.5-7Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                  <app-icon name="eye" />
                 }
               </button>
             </div>
@@ -95,9 +96,9 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
                 [attr.aria-label]="passwordVisible ? 'Hide password' : 'Show password'"
                 [title]="passwordVisible ? 'Hide password' : 'Show password'">
                 @if (passwordVisible) {
-                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.7 10.7 0 0 1 12 5c5.2 0 8.5 5.2 8.5 7a8.8 8.8 0 0 1-2.2 3.2M6.2 6.2C3.9 7.7 2.5 10.2 2.5 12c0 1.8 3.3 7 9.5 7a10.7 10.7 0 0 0 3.4-.6" /></svg>
+                  <app-icon name="eyeOff" />
                 } @else {
-                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2.5 12s3.3-7 9.5-7 9.5 7 9.5 7-3.3 7-9.5 7-9.5-7-9.5-7Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                  <app-icon name="eye" />
                 }
               </button>
             </div>
@@ -132,9 +133,9 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
                 [attr.aria-label]="passwordVisible ? 'Hide password' : 'Show password'"
                 [title]="passwordVisible ? 'Hide password' : 'Show password'">
                 @if (passwordVisible) {
-                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.7 10.7 0 0 1 12 5c5.2 0 8.5 5.2 8.5 7a8.8 8.8 0 0 1-2.2 3.2M6.2 6.2C3.9 7.7 2.5 10.2 2.5 12c0 1.8 3.3 7 9.5 7a10.7 10.7 0 0 0 3.4-.6" /></svg>
+                  <app-icon name="eyeOff" />
                 } @else {
-                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2.5 12s3.3-7 9.5-7 9.5 7 9.5 7-3.3 7-9.5 7-9.5-7-9.5-7Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                  <app-icon name="eye" />
                 }
               </button>
             </div>
