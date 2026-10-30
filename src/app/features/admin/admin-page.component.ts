@@ -3,26 +3,27 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit, PLATFORM_ID, inject } 
 import { FormsModule } from '@angular/forms';
 import { MediaItem, MusicApiService } from '../../core/services/music-api.service';
 import { MediaImageComponent } from '../../shared/components/media-image.component';
+import { AppIconComponent } from '../../shared/components/app-icon.component';
 
 @Component({
   selector: 'app-admin-page',
-  imports: [FormsModule, MediaImageComponent],
+  imports: [FormsModule, MediaImageComponent, AppIconComponent],
   template: `
     <section class="admin-page">
       <div class="admin-heading">
-        <p class="eyebrow admin-heading-kicker"><span class="admin-heading-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm12-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z" /></svg></span>K-SONG CREATOR STUDIO</p>
+        <p class="eyebrow admin-heading-kicker"><span class="admin-heading-mark" aria-hidden="true"><app-icon name="music" /></span>K-SONG CREATOR STUDIO</p>
         <h1>Make room for <em>new sounds.</em></h1>
         <p>Bring artists and their music to the K-Song community.</p>
       </div>
       <div class="inline-alert info-alert" role="note">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></svg>
+        <app-icon name="info" />
         <span>Song IDs are not reliably available from the public listing contract. To remove a track, enter its backend song ID below. No admin listing endpoint is assumed.</span>
       </div>
       <section class="admin-record-overview" aria-label="Live record details">
         <article class="admin-record-card">
           <div class="admin-record-heading">
             <span class="admin-record-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 5.2a3.5 3.5 0 0 1 0 6.7M17 14a6 6 0 0 1 4.5 5.8" /></svg>
+              <app-icon name="artists" />
             </span>
             <div><p class="eyebrow">ARTIST + ALBUM</p><h2>Record details</h2></div>
             <span class="admin-record-state" [class.is-ready]="artistName.trim() && albumName.trim()">{{ artistName.trim() && albumName.trim() ? 'Ready' : 'Draft' }}</span>
@@ -32,7 +33,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
               @if (artistImagePreview) {
                 <img [src]="artistImagePreview" [alt]="artistName ? artistName + ' artist artwork preview' : 'Artist artwork preview'" />
               } @else {
-                <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 5.2a3.5 3.5 0 0 1 0 6.7M17 14a6 6 0 0 1 4.5 5.8" /></svg>
+                <app-icon name="artists" />
               }
               <span>Artist image</span>
             </div>
@@ -40,7 +41,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
               @if (albumImagePreview) {
                 <img [src]="albumImagePreview" [alt]="albumName ? albumName + ' album artwork preview' : 'Album artwork preview'" />
               } @else {
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5" /></svg>
+                <app-icon name="library" />
               }
               <span>Album image</span>
             </div>
@@ -55,7 +56,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
         <article class="admin-record-card">
           <div class="admin-record-heading">
             <span class="admin-record-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm12-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z" /></svg>
+              <app-icon name="music" />
             </span>
             <div><p class="eyebrow">SONG + DELETE TARGET</p><h2>Track details</h2></div>
             <span class="admin-record-state" [class.is-ready]="songName.trim() && artistId.trim() && songImage">{{ songName.trim() && artistId.trim() && songImage ? 'Ready' : 'Draft' }}</span>
@@ -65,7 +66,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
               @if (songImagePreview) {
                 <img [src]="songImagePreview" [alt]="songName ? songName + ' artwork preview' : 'Song artwork preview'" />
               } @else {
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5" /></svg>
+                <app-icon name="library" />
               }
               <span>Song image</span>
             </div>
@@ -76,7 +77,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
             </div>
           </div>
           <div class="admin-delete-target">
-            <span class="delete-target-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg></span>
+            <span class="delete-target-icon" aria-hidden="true"><app-icon name="delete" /></span>
             <span><small>Song ID to delete</small><strong class="record-id">{{ songIdToDelete.trim() || 'Enter an ID below to review target' }}</strong></span>
           </div>
         </article>
@@ -85,7 +86,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
         <div class="admin-card-column">
           <section class="admin-card">
           <div class="admin-card-title">
-            <span class="admin-card-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 5.2a3.5 3.5 0 0 1 0 6.7M17 14a6 6 0 0 1 4.5 5.8" /></svg></span>
+            <span class="admin-card-title-icon" aria-hidden="true"><app-icon name="artists" /></span>
             <div><p class="eyebrow">NEW VOICE</p><h2>Create an artist</h2></div>
             <span class="card-number">01</span>
           </div>
@@ -95,15 +96,15 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
             <input id="artist-name" name="artistName" [(ngModel)]="artistName" placeholder="e.g. The Midnight Echo" autocomplete="off" required />
             <label for="album-name">Album name</label>
             <input id="album-name" name="albumName" [(ngModel)]="albumName" placeholder="e.g. Afterglow" autocomplete="off" required />
-            <label class="admin-file-label" for="artist-image"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="m21 15-5-5L5 20" /></svg>Artist image</label>
+            <label class="admin-file-label" for="artist-image"><app-icon name="image" />Artist image</label>
             <input id="artist-image" name="artistImage" type="file" accept="image/*" (change)="setArtistImage($event)" required />
-            @if (artistImage) { <span class="admin-file-selected"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>{{ artistImage.name }}</span> }
-            <label class="admin-file-label" for="album-image"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="m21 15-5-5L5 20" /></svg>Album cover</label>
+            @if (artistImage) { <span class="admin-file-selected"><app-icon name="check" />{{ artistImage.name }}</span> }
+            <label class="admin-file-label" for="album-image"><app-icon name="image" />Album cover</label>
             <input id="album-image" name="albumImage" type="file" accept="image/*" (change)="setAlbumImage($event)" required />
-            @if (albumImage) { <span class="admin-file-selected"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>{{ albumImage.name }}</span> }
+            @if (albumImage) { <span class="admin-file-selected"><app-icon name="check" />{{ albumImage.name }}</span> }
             <button class="button button-light button-wide" type="submit" [disabled]="artistForm.invalid || !artistImage || !albumImage || busy" [attr.aria-busy]="busy === 'artist'">
               @if (busy === 'artist') { <span class="admin-button-spinner" aria-hidden="true"></span> }
-              @else { <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" /></svg> }
+              @else { <app-icon name="plus" /> }
               <span>{{ busy === 'artist' ? 'Creating artist…' : 'Create artist' }}</span>
             </button>
           </form>
@@ -111,7 +112,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
 
           <section class="admin-card delete-card">
             <div class="admin-card-title">
-              <span class="admin-card-title-icon is-danger" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg></span>
+              <span class="admin-card-title-icon is-danger" aria-hidden="true"><app-icon name="delete" /></span>
               <div><p class="eyebrow">MAKE A CHANGE</p><h2>Remove a song</h2></div>
               <span class="card-number">03</span>
             </div>
@@ -121,7 +122,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
               <input id="delete-song-id" name="songId" [(ngModel)]="songIdToDelete" placeholder="Paste the exact song ID" autocomplete="off" required />
               <button class="button button-danger button-wide" type="submit" [disabled]="deleteForm.invalid || busy" [attr.aria-busy]="busy === 'delete'">
                 @if (busy === 'delete') { <span class="admin-button-spinner" aria-hidden="true"></span> }
-                @else { <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg> }
+                @else { <app-icon name="delete" /> }
                 <span>{{ busy === 'delete' ? 'Removing song…' : 'Delete song' }}</span>
               </button>
             </form>
@@ -130,7 +131,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
 
         <section class="admin-card upload-card">
           <div class="admin-card-title">
-            <span class="admin-card-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm12-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z" /></svg></span>
+            <span class="admin-card-title-icon" aria-hidden="true"><app-icon name="music" /></span>
             <div><p class="eyebrow">ADD TO THE MIX</p><h2>Upload a song</h2></div>
             <span class="card-number">02</span>
           </div>
@@ -144,7 +145,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
                 </div>
                 <button class="button button-quiet artist-refresh" type="button" (click)="loadArtists()" [disabled]="artistsLoading" [attr.aria-busy]="artistsLoading">
                   @if (artistsLoading) { <span class="admin-button-spinner" aria-hidden="true"></span> }
-                  @else { <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5m8.5-6A7 7 0 0 0 5 9m14 6a7 7 0 0 1-12.5 3" /></svg> }
+                  @else { <app-icon name="refresh" /> }
                   <span>{{ artistsLoading ? 'Loading' : 'Refresh list' }}</span>
                 </button>
               </div>
@@ -152,7 +153,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
                 <input id="artist-lookup" name="artistSearch" [(ngModel)]="artistSearch" placeholder="Search artist name" autocomplete="off"
                   (keydown.enter)="$event.preventDefault(); searchArtists()" />
                 <button class="button button-quiet" type="button" (click)="searchArtists()" [disabled]="artistsLoading" aria-label="Search artists">
-                  <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg>
+                  <app-icon name="search" />
                   <span>Find artist</span>
                 </button>
               </div>
@@ -169,7 +170,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
                         @if (artist.imageKey) {
                           <app-media-image [imageKey]="artist.imageKey" [alt]="''" />
                         } @else {
-                          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /></svg>
+                          <app-icon name="user" />
                         }
                       </span>
                       <span class="artist-option-copy">
@@ -178,7 +179,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
                         <small>{{ artist.albumName ? 'Album · ' + artist.albumName : 'Album name · Not provided by service' }}</small>
                         <small class="record-id">Album ID · {{ artist.albumId || 'Not provided by service' }}</small>
                       </span>
-                      <svg class="artist-option-check" aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>
+                      <app-icon name="check" class="artist-option-check" />
                     </button>
                   }
                 </div>
@@ -189,7 +190,7 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
                     </button>
                     <span>Page {{ artistPage + 1 }} of {{ artistsPageCount }}</span>
                     <button type="button" class="button button-quiet" (click)="changeArtistPage(1)" [disabled]="artistPage >= artistsPageCount - 1 || artistsLoading" aria-label="Next artist results">
-                      <span>Next</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>
+                      <span>Next</span><app-icon name="next" />
                     </button>
                   </div>
                 }
@@ -220,13 +221,13 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
             </select>
             <label class="admin-file-label" for="song-file"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm12-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z" /></svg>Audio file</label>
             <input id="song-file" name="songFile" type="file" accept="audio/*" (change)="setSongFile($event)" required />
-            @if (songFile) { <span class="admin-file-selected"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>{{ songFile.name }}</span> }
-            <label class="admin-file-label" for="song-image"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="m21 15-5-5L5 20" /></svg>Song cover</label>
+            @if (songFile) { <span class="admin-file-selected"><app-icon name="check" />{{ songFile.name }}</span> }
+            <label class="admin-file-label" for="song-image"><app-icon name="image" />Song cover</label>
             <input id="song-image" name="songImage" type="file" accept="image/*" (change)="setSongImage($event)" required />
-            @if (songImage) { <span class="admin-file-selected"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>{{ songImage.name }}</span> }
+            @if (songImage) { <span class="admin-file-selected"><app-icon name="check" />{{ songImage.name }}</span> }
             <button class="button button-light button-wide" type="submit" [disabled]="songForm.invalid || !songFile || !songImage || busy" [attr.aria-busy]="busy === 'song'">
               @if (busy === 'song') { <span class="admin-button-spinner" aria-hidden="true"></span> }
-              @else { <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M5 14v5h14v-5" /></svg> }
+              @else { <app-icon name="upload" /> }
               <span>{{ busy === 'song' ? 'Uploading song…' : 'Upload song' }}</span>
             </button>
           </form>
