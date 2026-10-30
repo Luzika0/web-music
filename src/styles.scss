@@ -4132,3 +4132,26 @@ button, a { touch-action: manipulation; }
 @media (prefers-reduced-motion: reduce) {
   .search-artist-link, .discover-artist-link, .now-playing-mode { transition: none !important; }
 }
+
+
+/* Focused account flow: remove the catalogue navigation and persistent player from auth screens. */
+.app-shell.is-auth-page .topbar {
+  justify-content: space-between;
+  gap: 16px;
+}
+.app-shell.is-auth-page .main-nav,
+.app-shell.is-auth-page .sidebar-toggle,
+.app-shell.is-auth-page .sidebar-reopen,
+.app-shell.is-auth-page .account-profile,
+.app-shell.is-auth-page .sign-out-button,
+.app-shell.is-auth-page .account-nav > a,
+.app-shell.is-auth-page .player-bar {
+  display: none !important;
+}
+.app-shell.is-auth-page .account-nav { margin-left: auto; }
+.app-shell.is-auth-page .page-content { width: min(1120px, calc(100% - 48px)); }
+@media (max-width: 700px) {
+  .app-shell.is-auth-page { padding-bottom: env(safe-area-inset-bottom); }
+  .app-shell.is-auth-page .topbar { min-height: 54px; height: 54px; }
+  .app-shell.is-auth-page .page-content { width: calc(100% - 24px); }
+}
