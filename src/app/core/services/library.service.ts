@@ -56,7 +56,8 @@ function playlistFrom(value: unknown): UserPlaylist | null {
     description: typeof item['description'] === 'string' ? item['description'] : '',
     coverImage: typeof item['coverImage'] === 'string' ? item['coverImage'] : null,
     createdAt: typeof item['createdAt'] === 'string' ? item['createdAt'] : null,
-    songIds,
+    songIds: songs.length ? songs.map(track => track.songId) : songIds,
+    songs,
   };
 }
 
