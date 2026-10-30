@@ -47,7 +47,7 @@ import { textLanguage } from '../../shared/utils/text-language';
                     <span aria-hidden="true">♫</span><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="play-overlay" aria-hidden="true">▶</span>
                   </button>
                   <div class="song-details" [attr.lang]="textLanguage(song.name, song.artistName)"><h3>{{ song.name }}</h3><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
-                  <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
+                  <button class="like-button" type="button" [disabled]="!song.id" [class.liked]="library.isLiked(song.id)" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
                   <button class="play-button" type="button" [disabled]="!song.id || player.loading()" (click)="player.play(song, songs)" [attr.aria-label]="'Play ' + song.name"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
                 </article>
               }
@@ -86,6 +86,7 @@ export class SearchPageComponent implements OnInit {
   hasSearched = false;
   error = '';
   partialError = '';
+  private searchGeneration = 0;
 
   ngOnInit(): void {
     this.query = this.route.snapshot.queryParamMap.get('q') ?? '';
@@ -95,6 +96,7 @@ export class SearchPageComponent implements OnInit {
   async search(): Promise<void> {
     const term = this.query.trim();
     if (!term) return;
+    const generation = ++this.searchGeneration;
     this.loading = true;
     this.hasSearched = true;
     this.error = '';
@@ -103,6 +105,7 @@ export class SearchPageComponent implements OnInit {
       this.api.songs(0, this.pageSize, term),
       this.api.artists(0, this.pageSize, term),
     ]);
+    if (generation !== this.searchGeneration) return;
     this.songs = songs.status === 'fulfilled' ? songs.value.items : [];
     this.artists = artists.status === 'fulfilled' ? artists.value.items : [];
     if (songs.status === 'rejected' && artists.status === 'rejected') {
