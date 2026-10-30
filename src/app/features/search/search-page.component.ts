@@ -85,6 +85,7 @@ export class SearchPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly pageSize = getAppConfig().pageSize;
   private readonly destroyRef = inject(DestroyRef);
+  private readonly platformId = inject(PLATFORM_ID);
   private readonly changeDetector = inject(ChangeDetectorRef);
   query = '';
   songs: MediaItem[] = [];
@@ -99,7 +100,7 @@ export class SearchPageComponent implements OnInit {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.query = params.get('q') ?? '';
       const term = this.query.trim();
-      if (term) void this.runSearch(term);
+      if (term && isPlatformBrowser(this.platformId)) void this.runSearch(term);
       else {
         this.searchGeneration += 1;
         this.songs = [];
