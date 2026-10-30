@@ -249,11 +249,23 @@ export class MusicApiService {
       return;
     }
 
+    // Rotate refresh credentials only when the access token is close to expiry.
+    // Opaque access tokens are validated by the API and refreshed after a 401.
     try {
-      await this.refreshAccessToken();
+      await this.refreshIfExpiring();
     } catch {
-      // Refresh failures expire the session; the app can then continue as signed out.
+      // A temporary network/CORS/server failure must not erase the saved session.
     }
+  }
+
+  async ensureSessionReady(): Promise<boolean> {
+    if (!this.session) return false;
+    try {
+      await this.refreshIfExpiring();
+    } catch {
+      // Keep the route/session during transient outages; protected APIs remain authoritative.
+    }
+    return this.session !== null;
   }
 
   async songs(page: number, size: number, searchText = ''): Promise<MediaPage> {
@@ -411,11 +423,7 @@ export class MusicApiService {
   private async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
     const authenticated = options.authenticated ?? this.isProtectedPath(path);
     if (authenticated && options.retryUnauthorized !== false) {
-      if (path.includes('/song/')) {
-        await this.refreshPlaybackAuthorization();
-      } else {
-        await this.refreshIfExpiring();
-      }
+      await this.refreshIfExpiring();
     }
     const accessTokenUsed = authenticated ? this.session?.accessToken : null;
     const headers = this.requestHeaders(options, authenticated);
@@ -510,8 +518,12 @@ export class MusicApiService {
       this.user.set(this.session);
       return accessToken;
     } catch (error) {
-      this.expireSession();
-      throw new Error(`Your session could not be refreshed. Please sign in again. ${this.errorMessage(error)}`);
+      // Only explicit 401/403 responses prove the refresh credential is rejected.
+      // Network errors, CORS failures and 5xx responses are temporary.
+      if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) {
+        this.expireSession();
+      }
+      throw new Error(`Your session could not be refreshed. ${this.errorMessage(error)}`);
     }
   }
 
@@ -521,7 +533,7 @@ export class MusicApiService {
     controller: AbortController,
     onTakeover: () => void,
   ): Promise<void> {
-    await this.refreshPlaybackAuthorization();
+    await this.refreshIfExpiring();
     const accessTokenUsed = this.session?.accessToken;
     const url = this.absoluteUrl(`/api/auth/song/${encodeURIComponent(songId)}/playback-events`);
     const request = (): Promise<Response> => fetch(url, {
