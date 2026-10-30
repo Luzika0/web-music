@@ -6,12 +6,13 @@ import { MediaItem, MusicApiService } from '../../core/services/music-api.servic
 import { PlaybackService } from '../../core/services/playback.service';
 import { LibraryService } from '../../core/services/library.service';
 import { MediaImageComponent } from '../../shared/components/media-image.component';
+import { AppIconComponent } from '../../shared/components/app-icon.component';
 import { getAppConfig } from '../../core/config/app-config';
 import { textLanguage } from '../../shared/utils/text-language';
 
 @Component({
   selector: 'app-search-page',
-  imports: [FormsModule, RouterLink, MediaImageComponent],
+  imports: [FormsModule, RouterLink, MediaImageComponent, AppIconComponent],
   template: `
     <section class="catalog-page">
       <header class="catalog-heading">
@@ -21,7 +22,7 @@ import { textLanguage } from '../../shared/utils/text-language';
       </header>
       <form class="catalog-search" role="search" (ngSubmit)="search()">
         <label class="sr-only" for="catalog-query">Search songs and artists</label>
-        <span class="catalog-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></span>
+        <span class="catalog-search-icon" aria-hidden="true"><app-icon name="search" /></span>
         <input id="catalog-query" name="query" type="search" [(ngModel)]="query" placeholder="What are you in the mood for?" autocomplete="off" />
         <button class="button button-light" type="submit" [disabled]="!query.trim()" [attr.aria-busy]="loading">
           @if (loading) { <span class="button-loading-spinner" aria-hidden="true"></span> }
@@ -37,7 +38,7 @@ import { textLanguage } from '../../shared/utils/text-language';
       } @else if (loading) {
         <div class="inline-alert info-alert" role="status">Finding a few good matches…</div>
       } @else if (!songs.length && !artists.length) {
-        <div class="empty-state"><span class="empty-icon" aria-hidden="true">⌕</span><h2>No matches yet</h2><p>Try a shorter search or a different spelling.</p></div>
+        <div class="empty-state"><span class="empty-icon" aria-hidden="true"><app-icon name="searchEmpty" size="30" /></span><h2>No matches yet</h2><p>Try a shorter search or a different spelling.</p></div>
       } @else {
         @if (songs.length) {
           <section class="search-results-section" aria-labelledby="search-songs-heading">
@@ -46,11 +47,11 @@ import { textLanguage } from '../../shared/utils/text-language';
               @for (song of songs; track song.id || $index) {
                 <article class="song-row">
                   <button class="song-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
-                    <span aria-hidden="true">♫</span><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="play-overlay" aria-hidden="true">▶</span>
+                    <app-icon name="music" /><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="play-overlay" aria-hidden="true">▶</span>
                   </button>
                   <div class="song-details" [attr.lang]="textLanguage(song.name, song.artistName)"><h3>{{ song.name }}</h3><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
-                  <button class="like-button" type="button" [disabled]="!song.id" [class.liked]="library.isLiked(song.id)" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
-                  <button class="play-button" type="button" [disabled]="!song.id" (click)="player.play(song, songs)" [attr.aria-label]="'Play ' + song.name"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
+                  <button class="like-button" type="button" [disabled]="!song.id" [class.liked]="library.isLiked(song.id)" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'" (click)="library.toggleLike(song)"><app-icon name="heart" /></button>
+                  <button class="play-button" type="button" [disabled]="!song.id" (click)="player.play(song, songs)" [attr.aria-label]="'Play ' + song.name"><app-icon name="play" /></button>
                 </article>
               }
             </div>
