@@ -7,10 +7,11 @@ import { PlaybackService } from './core/services/playback.service';
 import { LibraryService } from './core/services/library.service';
 import { textLanguage } from './shared/utils/text-language';
 import { MediaImageComponent } from './shared/components/media-image.component';
+import { AppIconComponent } from './shared/components/app-icon.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MediaImageComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MediaImageComponent, AppIconComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
