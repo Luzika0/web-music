@@ -96,7 +96,7 @@ import { getAppConfig } from '../../core/config/app-config';
         <div class="song-list">
           @for (song of songsPage?.items; track song.id || $index; let index = $index) {
             <article class="song-row">
-              <button class="song-row-main" type="button" [attr.lang]="textLanguage(song.name, song.artistName)" [disabled]="!song.id || player.loading()"
+              <button class="song-row-main" type="button" [attr.lang]="textLanguage(song.name, song.artistName)" [disabled]="!song.id"
                 [class.is-current]="player.currentSong()?.id === song.id"
                 [attr.aria-label]="song.id ? 'Play ' + song.name + (song.artistName ? ' by ' + song.artistName : '') : song.name + ' — playback unavailable'"
                 (click)="player.play(song, songsPage?.items ?? [])">
@@ -113,7 +113,7 @@ import { getAppConfig } from '../../core/config/app-config';
                 </span>
               </button>
               <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [disabled]="!song.id" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
-              <button class="play-button" type="button" [disabled]="!song.id || player.loading()" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song, songsPage?.items ?? [])" [attr.aria-label]="'Play ' + song.name">
+              <button class="play-button" type="button" [disabled]="!song.id" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song, songsPage?.items ?? [])" [attr.aria-label]="'Play ' + song.name">
                 @if (player.loading() && player.currentSong()?.id === song.id) { <span class="play-button-loading-spinner" aria-hidden="true"></span> }
                 @else { <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg> }
               </button>
