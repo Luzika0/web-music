@@ -270,7 +270,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   private destroyed = false;
 
   ngOnInit(): void {
-    void this.loadArtists();
+    if (isPlatformBrowser(this.platformId)) void this.loadArtists();
   }
 
   setArtistImage(event: Event): void {
