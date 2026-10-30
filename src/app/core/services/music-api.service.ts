@@ -326,6 +326,52 @@ export class MusicApiService {
     await this.request('DELETE', `/api/auth/admin/delete-song/${encodeURIComponent(songId)}`, { authenticated: true });
   }
 
+
+  async libraryFavorites(): Promise<MediaItem[]> {
+    const response = await this.request<unknown>('GET', '/api/auth/library/favorites', { authenticated: true });
+    return normalizeMedia(response, 'song', 0).items;
+  }
+
+  async addLibraryFavorite(songId: string): Promise<void> {
+    await this.request('POST', `/api/auth/library/favorites/${encodeURIComponent(songId)}`, { authenticated: true });
+  }
+
+  async removeLibraryFavorite(songId: string): Promise<void> {
+    await this.request('DELETE', `/api/auth/library/favorites/${encodeURIComponent(songId)}`, { authenticated: true });
+  }
+
+  async libraryPlaylists(): Promise<unknown> {
+    return this.request<unknown>('GET', '/api/auth/library/playlists', { authenticated: true });
+  }
+
+  async createLibraryPlaylist(payload: { name: string; description: string }): Promise<unknown> {
+    return this.request<unknown>('POST', '/api/auth/library/playlists', { body: payload, authenticated: true });
+  }
+
+  async getLibraryPlaylist(playlistId: number): Promise<unknown> {
+    return this.request<unknown>('GET', `/api/auth/library/playlists/${playlistId}`, { authenticated: true });
+  }
+
+  async updateLibraryPlaylist(playlistId: number, payload: { name: string; description: string }): Promise<unknown> {
+    return this.request<unknown>('PUT', `/api/auth/library/playlists/${playlistId}`, { body: payload, authenticated: true });
+  }
+
+  async deleteLibraryPlaylist(playlistId: number): Promise<void> {
+    await this.request('DELETE', `/api/auth/library/playlists/${playlistId}`, { authenticated: true });
+  }
+
+  async addSongToLibraryPlaylist(playlistId: number, songId: string): Promise<unknown> {
+    return this.request<unknown>('POST', `/api/auth/library/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`, { authenticated: true });
+  }
+
+  async removeSongFromLibraryPlaylist(playlistId: number, songId: string): Promise<unknown> {
+    return this.request<unknown>('DELETE', `/api/auth/library/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`, { authenticated: true });
+  }
+
+  async reorderLibraryPlaylist(playlistId: number, songIds: string[]): Promise<unknown> {
+    return this.request<unknown>('PUT', `/api/auth/library/playlists/${playlistId}/songs`, { body: songIds, authenticated: true });
+  }
+
   async playbackSession(songId: string): Promise<PlaybackSession> {
     const response = await this.request<unknown>('POST', `/api/auth/song/${encodeURIComponent(songId)}/playback-token`, {
       authenticated: true,
@@ -468,7 +514,8 @@ export class MusicApiService {
     return path.includes('/admin/')
       || path.includes('/song/')
       || path.includes('/media/list-song')
-      || path.includes('/media/image');
+      || path.includes('/media/image')
+      || path.includes('/library/');
   }
 
   async refreshPlaybackAuthorization(): Promise<void> {

@@ -1,43 +1,196 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PlaybackService } from '../../core/services/playback.service';
-import { LibraryService } from '../../core/services/library.service';
+import { LibraryService, UserPlaylist } from '../../core/services/library.service';
+import { MusicApiService } from '../../core/services/music-api.service';
 
 @Component({
   selector: 'app-library-page',
-  imports: [RouterLink],
+  imports: [RouterLink, FormsModule],
   template: `
     <section class="catalog-page">
       <header class="catalog-heading">
         <p class="eyebrow">A SPACE THAT'S YOURS</p>
         <h1>Your <em>Library.</em></h1>
-        <p>Saved songs live on this device. Playlist examples below are demo content until a library API is available.</p>
+        <p>Your favorites and playlists are saved to your account and available across devices.</p>
       </header>
-      <div class="inline-alert info-alert" role="note">Local demo library · Your likes are saved in this browser only and are not synced to your account.</div>
-      <a class="library-liked-feature" routerLink="/liked">
-        <span class="liked-art" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></span>
-        <span class="liked-feature-copy"><small>YOUR COLLECTION</small><strong>Liked Songs</strong><span>{{ library.likedSongs().length }} songs saved on this device</span></span>
-        <span class="shortcut-arrow" aria-hidden="true">↗</span>
-      </a>
-      <div class="section-heading library-section-heading"><div><p class="eyebrow">SAMPLE COLLECTIONS</p><h2>Mixes for your mood</h2></div><span class="demo-badge">DEMO</span></div>
-      <div class="demo-playlist-grid">
-        @for (playlist of playlists; track playlist.name) {
-          <article class="demo-playlist-card" [style.--playlist-color]="playlist.color">
-            <span class="demo-playlist-art" aria-hidden="true">{{ playlist.symbol }}</span>
-            <p class="eyebrow">K-SONG MIX · DEMO</p><h3>{{ playlist.name }}</h3><p>{{ playlist.description }}</p>
-            <span class="demo-playlist-note">Sample collection · No songs are connected</span>
-          </article>
+
+      @if (!api.user()) {
+        <div class="empty-state"><h2>Your library is waiting</h2><p>Sign in to save favorites and create playlists that sync across devices.</p><a class="button button-light" routerLink="/login">Sign in</a></div>
+      } @else {
+        <a class="library-liked-feature" routerLink="/liked">
+          <span class="liked-art" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></span>
+          <span class="liked-feature-copy"><small>YOUR COLLECTION</small><strong>Liked Songs</strong><span>{{ library.likedSongs().length }} songs saved to your account</span></span>
+          <span class="shortcut-arrow" aria-hidden="true">↗</span>
+        </a>
+
+        <div class="section-heading library-section-heading"><div><p class="eyebrow">YOUR COLLECTIONS</p><h2>Playlists</h2></div></div>
+        <form class="library-create-form" (ngSubmit)="create()" #createForm="ngForm">
+          <label for="playlist-name">Playlist name</label>
+          <input id="playlist-name" name="playlistName" [(ngModel)]="newName" maxlength="80" required placeholder="e.g. Khmer classics">
+          <label for="playlist-description">Description</label>
+          <input id="playlist-description" name="playlistDescription" [(ngModel)]="newDescription" maxlength="500" placeholder="A short description (optional)">
+          <button class="button button-light" type="submit" [disabled]="createForm.invalid || saving"> {{ saving ? 'Creating…' : 'Create playlist' }} </button>
+        </form>
+
+        @if (error) { <div class="inline-alert error-alert" role="alert">{{ error }} <button class="text-button" type="button" (click)="load()">Try again</button></div> }
+        @if (loading) {
+          <div class="inline-alert info-alert" role="status">Loading your playlists…</div>
+        } @else if (library.playlists().length) {
+          <div class="demo-playlist-grid">
+            @for (playlist of library.playlists(); track playlist.playlistId) {
+              <article class="demo-playlist-card" [class.is-selected]="selected?.playlistId === playlist.playlistId">
+                <button class="playlist-open" type="button" (click)="open(playlist)">
+                  <span class="demo-playlist-art" aria-hidden="true">♫</span>
+                  <p class="eyebrow">YOUR PLAYLIST</p><h3>{{ playlist.name }}</h3>
+                  <p>{{ playlist.description || 'No description' }}</p>
+                  <span class="demo-playlist-note">{{ playlist.songIds.length }} {{ playlist.songIds.length === 1 ? 'song' : 'songs' }}</span>
+                </button>
+                <button class="text-button" type="button" (click)="beginEdit(playlist)">Edit</button>
+                <button class="text-button" type="button" (click)="removePlaylist(playlist)">Delete</button>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="empty-state"><h3>No playlists yet</h3><p>Create your first playlist above. You can add songs using their song IDs from the catalog.</p></div>
         }
-      </div>
+
+        @if (selected) {
+          <section class="playlist-detail" aria-live="polite">
+            <div class="section-heading"><div><p class="eyebrow">PLAYLIST DETAILS</p><h2>{{ selected.name }}</h2></div><button class="text-button" type="button" (click)="selected = null">Close</button></div>
+            <p>{{ selected.description }}</p>
+            <form class="library-create-form" (ngSubmit)="addSong()">
+              <label for="song-id">Song ID (UUID)</label>
+              <input id="song-id" name="songId" [(ngModel)]="songId" required placeholder="Paste a song UUID">
+              <button class="button button-light" type="submit" [disabled]="saving || !songId.trim()">Add song</button>
+            </form>
+            @if (selected.songIds.length) {
+              <ol class="playlist-song-ids">
+                @for (id of selected.songIds; track id; let i = $index) {
+                  <li><code>{{ id }}</code><span class="playlist-order-actions">
+                    <button class="text-button" type="button" [disabled]="i === 0 || saving" (click)="move(i, -1)" aria-label="Move song up">↑</button>
+                    <button class="text-button" type="button" [disabled]="i === selected!.songIds.length - 1 || saving" (click)="move(i, 1)" aria-label="Move song down">↓</button>
+                    <button class="text-button" type="button" [disabled]="saving" (click)="removeSong(id)">Remove</button>
+                  </span></li>
+                }
+              </ol>
+            } @else { <p>This playlist is empty. Add a song using its UUID above.</p> }
+          </section>
+        }
+
+        @if (editing) {
+          <section class="playlist-detail">
+            <h2>Edit playlist</h2>
+            <form class="library-create-form" (ngSubmit)="saveEdit()">
+              <label for="edit-name">Name</label><input id="edit-name" name="editName" [(ngModel)]="editName" maxlength="80" required>
+              <label for="edit-description">Description</label><input id="edit-description" name="editDescription" [(ngModel)]="editDescription" maxlength="500">
+              <button class="button button-light" type="submit" [disabled]="saving || !editName.trim()">Save changes</button>
+              <button class="text-button" type="button" (click)="editing = null">Cancel</button>
+            </form>
+          </section>
+        }
+      }
     </section>
   `,
 })
-export class LibraryPageComponent {
+export class LibraryPageComponent implements OnInit {
   readonly library = inject(LibraryService);
   readonly player = inject(PlaybackService);
-  readonly playlists = [
-    { name: 'Soft Focus', description: 'A little room to breathe.', symbol: '◌', color: '#674d88' },
-    { name: 'After Hours', description: 'For the city after dark.', symbol: '☾', color: '#a65b63' },
-    { name: 'New Day', description: 'Find your first good thing.', symbol: '☼', color: '#a17842' },
-  ];
+  readonly api = inject(MusicApiService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  newName = '';
+  newDescription = '';
+  songId = '';
+  loading = false;
+  saving = false;
+  error = '';
+  selected: UserPlaylist | null = null;
+  editing: UserPlaylist | null = null;
+  editName = '';
+  editDescription = '';
+
+  ngOnInit(): void { if (this.api.user()) void this.load(); }
+
+  async load(): Promise<void> {
+    this.loading = true; this.error = '';
+    try {
+      await Promise.all([this.library.loadFavorites(), this.library.loadPlaylists()]);
+      if (this.selected) this.selected = await this.library.getPlaylist(this.selected.playlistId);
+    } catch (error) { this.error = this.api.toUserMessage(error); }
+    finally { this.loading = false; this.changeDetector.markForCheck(); }
+  }
+
+  async create(): Promise<void> {
+    this.saving = true; this.error = '';
+    try {
+      const playlist = await this.library.createPlaylist(this.newName, this.newDescription);
+      this.newName = ''; this.newDescription = ''; this.selected = playlist;
+    } catch (error) { this.error = this.api.toUserMessage(error); }
+    finally { this.saving = false; this.changeDetector.markForCheck(); }
+  }
+
+  async open(playlist: UserPlaylist): Promise<void> {
+    this.error = '';
+    try { this.selected = await this.library.getPlaylist(playlist.playlistId); }
+    catch (error) { this.error = this.api.toUserMessage(error); }
+    finally { this.changeDetector.markForCheck(); }
+  }
+
+  beginEdit(playlist: UserPlaylist): void {
+    this.editing = playlist; this.editName = playlist.name; this.editDescription = playlist.description;
+  }
+
+  async saveEdit(): Promise<void> {
+    if (!this.editing) return;
+    this.saving = true; this.error = '';
+    try {
+      const id = this.editing.playlistId;
+      await this.library.updatePlaylist(id, this.editName, this.editDescription);
+      if (this.selected?.playlistId === id) this.selected = await this.library.getPlaylist(id);
+      this.editing = null;
+    } catch (error) { this.error = this.api.toUserMessage(error); }
+    finally { this.saving = false; this.changeDetector.markForCheck(); }
+  }
+
+  async removePlaylist(playlist: UserPlaylist): Promise<void> {
+    if (!globalThis.confirm('Delete playlist "' + playlist.name + '"? This cannot be undone.')) return;
+    this.saving = true; this.error = '';
+    try {
+      await this.library.deletePlaylist(playlist.playlistId);
+      if (this.selected?.playlistId === playlist.playlistId) this.selected = null;
+      if (this.editing?.playlistId === playlist.playlistId) this.editing = null;
+    } catch (error) { this.error = this.api.toUserMessage(error); }
+    finally { this.saving = false; this.changeDetector.markForCheck(); }
+  }
+
+  async addSong(): Promise<void> {
+    if (!this.selected || !this.songId.trim()) return;
+    this.saving = true; this.error = '';
+    try {
+      this.selected = await this.library.addSong(this.selected.playlistId, this.songId.trim());
+      this.songId = '';
+    } catch (error) { this.error = this.api.toUserMessage(error); }
+    finally { this.saving = false; this.changeDetector.markForCheck(); }
+  }
+
+  async removeSong(songId: string): Promise<void> {
+    if (!this.selected) return;
+    this.saving = true; this.error = '';
+    try { this.selected = await this.library.removeSong(this.selected.playlistId, songId); }
+    catch (error) { this.error = this.api.toUserMessage(error); }
+    finally { this.saving = false; this.changeDetector.markForCheck(); }
+  }
+
+  async move(index: number, delta: number): Promise<void> {
+    if (!this.selected) return;
+    const ids = [...this.selected.songIds];
+    const target = index + delta;
+    if (target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    this.saving = true; this.error = '';
+    try { this.selected = await this.library.reorderSongs(this.selected.playlistId, ids); }
+    catch (error) { this.error = this.api.toUserMessage(error); }
+    finally { this.saving = false; this.changeDetector.markForCheck(); }
+  }
 }

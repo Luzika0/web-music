@@ -998,33 +998,46 @@ describe('MusicApiService session initialization', () => {
   });
 });
 
-describe('LibraryService', () => {
+describe('LibraryService account API', () => {
+  const song: MediaItem = {
+    id: 'song-1', artistId: 'artist-1', name: 'Evening song',
+    artistName: 'K-Song artist', imageKey: '', kind: 'song',
+  };
   let library: LibraryService;
+  const api = {
+    user: () => ({ id: 'user-1' }),
+    libraryFavorites: vi.fn(async () => [song]),
+    addLibraryFavorite: vi.fn(async () => undefined),
+    removeLibraryFavorite: vi.fn(async () => undefined),
+    libraryPlaylists: vi.fn(async () => ({ data: [] })),
+    toUserMessage: (error: unknown) => String(error),
+  };
 
   beforeEach(() => {
-    localStorage.removeItem('ksong.library.v1');
-    TestBed.configureTestingModule({});
+    vi.clearAllMocks();
+    api.libraryFavorites.mockResolvedValue([song]);
+    TestBed.configureTestingModule({ providers: [{ provide: MusicApiService, useValue: api }] });
     library = TestBed.inject(LibraryService);
   });
 
-  afterEach(() => localStorage.removeItem('ksong.library.v1'));
-
-  it('persists liked catalog songs locally and removes them again', () => {
-    const song: MediaItem = {
-      id: 'song-1',
-      artistId: 'artist-1',
-      name: 'Evening song',
-      artistName: 'K-Song artist',
-      imageKey: '',
-      kind: 'song',
-    };
-
-    library.toggleLike(song);
+  it('loads favorites from the authenticated account API', async () => {
+    await library.loadFavorites();
+    expect(api.libraryFavorites).toHaveBeenCalledOnce();
+    expect(library.likedSongs()).toEqual([song]);
     expect(library.isLiked(song.id)).toBe(true);
-    expect(JSON.parse(localStorage.getItem('ksong.library.v1') ?? '[]')).toEqual([song]);
+  });
 
-    library.removeLikedSong(song.id);
-    expect(library.isLiked(song.id)).toBe(false);
+  it('adds a favorite through the API and refreshes server state', async () => {
+    await library.toggleLike(song);
+    expect(api.addLibraryFavorite).toHaveBeenCalledWith(song.id);
+    expect(api.libraryFavorites).toHaveBeenCalledOnce();
+    expect(library.isLiked(song.id)).toBe(true);
+  });
+
+  it('removes a favorite through the API', async () => {
+    await library.loadFavorites();
+    await library.removeLikedSong(song.id);
+    expect(api.removeLibraryFavorite).toHaveBeenCalledWith(song.id);
     expect(library.likedSongs()).toEqual([]);
   });
 });
