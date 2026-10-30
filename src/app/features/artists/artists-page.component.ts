@@ -30,7 +30,7 @@ import { textLanguage } from '../../shared/utils/text-language';
       @if (error) {
         <div class="inline-alert error-alert" role="alert">{{ error }} <button type="button" class="text-button" (click)="load()">Try again</button></div>
       } @else if (loading && !page) {
-        <div class="artist-grid" aria-label="Loading artists">
+        <div class="artist-grid" role="status" aria-label="Loading artists">
           @for (placeholder of placeholders; track placeholder) { <div class="artist-card"><span class="skeleton artist-skeleton"></span><span class="skeleton line-skeleton"></span></div> }
         </div>
       } @else if (page?.items?.length) {
@@ -45,7 +45,7 @@ import { textLanguage } from '../../shared/utils/text-language';
         @if (page?.totalPages !== 1) {
           <div class="pagination">
             <button type="button" class="button button-quiet" (click)="changePage(-1)" [disabled]="pageNumber === 0 || loading">← Previous</button>
-            <span>Page {{ pageNumber + 1 }}{{ page?.totalPages ? ' of ' + page?.totalPages : '' }}</span>
+            <span aria-live="polite" aria-atomic="true">Page {{ pageNumber + 1 }}{{ page?.totalPages ? ' of ' + page?.totalPages : '' }}</span>
             <button type="button" class="button button-quiet" (click)="changePage(1)" [disabled]="loading || !canGoNext()">Next →</button>
           </div>
         }
