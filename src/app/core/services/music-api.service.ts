@@ -199,6 +199,10 @@ export class MusicApiService {
       throw new Error('The login response is missing data.token.acessToken, data.token.userId, or data.token.refreshToken.');
     }
 
+    const previousUserId = this.session?.id;
+    if (previousUserId && previousUserId !== String(userId)) {
+      void this.mediaCache.clearUser(previousUserId).catch(() => this.mediaCache.reportUnavailable());
+    }
     this.sessionGeneration += 1;
     this.session = {
       id: String(userId),
@@ -230,9 +234,6 @@ export class MusicApiService {
       }
     } finally {
       this.clearSession();
-      if (userId) {
-        await this.mediaCache.clearUser(userId).catch(() => this.mediaCache.reportUnavailable());
-      }
     }
   }
 
@@ -828,6 +829,10 @@ export class MusicApiService {
   }
 
   private clearSession(): void {
+    const previousUserId = this.session?.id;
+    if (previousUserId) {
+      void this.mediaCache.clearUser(previousUserId).catch(() => this.mediaCache.reportUnavailable());
+    }
     this.sessionGeneration += 1;
     this.session = null;
     this.user.set(null);
