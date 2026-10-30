@@ -1,69 +1,122 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
-import { MediaItem } from './music-api.service';
-
-const LIBRARY_KEY = 'ksong.library.v1';
-
-function isMediaItem(value: unknown): value is MediaItem {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-  const item = value as Record<string, unknown>;
-  return item['kind'] === 'song'
-    && typeof item['id'] === 'string'
-    && typeof item['name'] === 'string'
-    && typeof item['artistId'] === 'string'
-    && typeof item['artistName'] === 'string'
-    && typeof item['imageKey'] === 'string';
-}
+import { Injectable, PLATFORM_ID, effect, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { MediaItem, MusicApiService, PlaylistItem } from './music-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class LibraryService {
   private readonly platformId = inject(PLATFORM_ID);
-  readonly likedSongs = signal<MediaItem[]>(this.loadLikedSongs());
+  private readonly api = inject(MusicApiService);
+  private readonly router = inject(Router);
+
+  readonly likedSongs = signal<MediaItem[]>([]);
+  readonly playlists = signal<PlaylistItem[]>([]);
+  readonly songOptions = signal<MediaItem[]>([]);
+  readonly loading = signal(false);
+  readonly error = signal('');
+
+  constructor() {
+    effect(() => {
+      const user = this.api.user();
+      if (!isPlatformBrowser(this.platformId)) return;
+      if (!user) {
+        this.likedSongs.set([]);
+        this.playlists.set([]);
+        this.songOptions.set([]);
+        return;
+      }
+      void this.reload();
+    });
+  }
+
+  async reload(): Promise<void> {
+    if (!this.api.user()) return;
+    this.loading.set(true);
+    this.error.set('');
+    try {
+      const [favorites, playlists] = await Promise.all([
+        this.api.favoriteSongs(),
+        this.api.playlists(),
+      ]);
+      this.likedSongs.set(favorites);
+      this.playlists.set(playlists);
+      try {
+        this.songOptions.set((await this.api.songs(0, 100)).items);
+      } catch {
+        this.songOptions.set([]);
+      }
+    } catch (error) {
+      this.error.set(this.api.toUserMessage(error));
+    } finally {
+      this.loading.set(false);
+    }
+  }
 
   isLiked(songId: string): boolean {
     return this.likedSongs().some((song) => song.id === songId);
   }
 
   toggleLike(song: MediaItem): void {
-    if (!song.id || song.kind !== 'song' || !isPlatformBrowser(this.platformId)) {
+    if (!song.id || song.kind !== 'song') return;
+    if (!this.api.user()) {
+      void this.router.navigate(['/login'], { queryParams: { next: '/liked' } });
       return;
     }
-
-    const updated = this.isLiked(song.id)
-      ? this.likedSongs().filter((item) => item.id !== song.id)
-      : [song, ...this.likedSongs()];
-    this.likedSongs.set(updated);
-    this.persist(updated);
+    const wasLiked = this.isLiked(song.id);
+    const previous = this.likedSongs();
+    this.likedSongs.set(wasLiked
+      ? previous.filter((item) => item.id !== song.id)
+      : [song, ...previous]);
+    const request = wasLiked
+      ? this.api.removeFavorite(song.id)
+      : this.api.addFavorite(song.id);
+    void request.catch((error: unknown) => {
+      this.likedSongs.set(previous);
+      this.error.set(this.api.toUserMessage(error));
+    });
   }
 
   removeLikedSong(songId: string): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-    const updated = this.likedSongs().filter((song) => song.id !== songId);
-    this.likedSongs.set(updated);
-    this.persist(updated);
+    const previous = this.likedSongs();
+    this.likedSongs.set(previous.filter((song) => song.id !== songId));
+    void this.api.removeFavorite(songId).catch((error: unknown) => {
+      this.likedSongs.set(previous);
+      this.error.set(this.api.toUserMessage(error));
+    });
   }
 
-  private persist(songs: MediaItem[]): void {
-    try {
-      localStorage.setItem(LIBRARY_KEY, JSON.stringify(songs));
-    } catch {
-      // Keep this device's in-memory collection usable if browser storage is blocked or full.
-    }
+  async loadPlaylist(id: string): Promise<void> {
+    const playlist = await this.api.playlist(id);
+    this.playlists.update((items) => items.map((item) => item.id === id ? playlist : item));
   }
 
-  private loadLikedSongs(): MediaItem[] {
-    if (!isPlatformBrowser(this.platformId)) {
-      return [];
-    }
-    try {
-      const saved: unknown = JSON.parse(localStorage.getItem(LIBRARY_KEY) ?? '[]');
-      return Array.isArray(saved) ? saved.filter(isMediaItem) : [];
-    } catch {
-      return [];
-    }
+  async createPlaylist(name: string, description = ''): Promise<void> {
+    const playlist = await this.api.createPlaylist({ name, description });
+    this.playlists.update((items) => [playlist, ...items]);
+  }
+
+  async updatePlaylist(id: string, name: string, description = ''): Promise<void> {
+    const updated = await this.api.updatePlaylist(id, { name, description });
+    this.playlists.update((items) => items.map((item) => item.id === id ? updated : item));
+  }
+
+  async deletePlaylist(id: string): Promise<void> {
+    await this.api.deletePlaylist(id);
+    this.playlists.update((items) => items.filter((item) => item.id !== id));
+  }
+
+  async addSongToPlaylist(playlistId: string, songId: string): Promise<void> {
+    await this.api.addSongToPlaylist(playlistId, songId);
+    await this.reload();
+  }
+
+  async reorderPlaylist(playlistId: string, songIds: string[]): Promise<void> {
+    await this.api.reorderPlaylist(playlistId, songIds);
+    this.playlists.update((items) => items.map((item) => item.id === playlistId ? { ...item, songIds } : item));
+  }
+
+  async removeSongFromPlaylist(playlistId: string, songId: string): Promise<void> {
+    await this.api.removeSongFromPlaylist(playlistId, songId);
+    await this.reload();
   }
 }

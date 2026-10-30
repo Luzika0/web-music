@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { PLATFORM_ID } from '@angular/core';
+import { PLATFORM_ID, signal } from '@angular/core';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
@@ -1000,32 +1000,60 @@ describe('MusicApiService session initialization', () => {
 
 describe('LibraryService', () => {
   let library: LibraryService;
+  const api = {
+    user: signal({ id: 'user-1' }),
+    favoriteSongs: vi.fn(async () => [] as MediaItem[]),
+    playlists: vi.fn(async () => []),
+    songs: vi.fn(async () => ({ items: [], page: 0, totalPages: 0 })),
+    addFavorite: vi.fn(async () => {}),
+    removeFavorite: vi.fn(async () => {}),
+    createPlaylist: vi.fn(async (payload: { name: string; description?: string }) => ({
+      id: 'playlist-1', name: payload.name, description: payload.description ?? '', songIds: [],
+    })),
+    updatePlaylist: vi.fn(async (id: string, payload: { name: string; description?: string }) => ({
+      id, name: payload.name, description: payload.description ?? '', songIds: [],
+    })),
+    deletePlaylist: vi.fn(async () => {}),
+    addSongToPlaylist: vi.fn(async () => {}),
+    removeSongFromPlaylist: vi.fn(async () => {}),
+    toUserMessage: vi.fn((error: unknown) => String(error)),
+  };
 
-  beforeEach(() => {
-    localStorage.removeItem('ksong.library.v1');
-    TestBed.configureTestingModule({});
+  beforeEach(async () => {
+    api.favoriteSongs.mockClear();
+    api.playlists.mockClear();
+    api.songs.mockClear();
+    api.addFavorite.mockClear();
+    api.removeFavorite.mockClear();
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: MusicApiService, useValue: api }],
+    });
     library = TestBed.inject(LibraryService);
+    await vi.waitFor(() => expect(api.favoriteSongs).toHaveBeenCalled());
   });
 
-  afterEach(() => localStorage.removeItem('ksong.library.v1'));
-
-  it('persists liked catalog songs locally and removes them again', () => {
+  it('syncs favorite additions and removals with the account API', async () => {
     const song: MediaItem = {
-      id: 'song-1',
-      artistId: 'artist-1',
-      name: 'Evening song',
-      artistName: 'K-Song artist',
-      imageKey: '',
-      kind: 'song',
+      id: 'song-1', artistId: 'artist-1', name: 'Evening song',
+      artistName: 'K-Song artist', imageKey: '', kind: 'song',
     };
-
     library.toggleLike(song);
     expect(library.isLiked(song.id)).toBe(true);
-    expect(JSON.parse(localStorage.getItem('ksong.library.v1') ?? '[]')).toEqual([song]);
+    await vi.waitFor(() => expect(api.addFavorite).toHaveBeenCalledWith(song.id));
 
     library.removeLikedSong(song.id);
     expect(library.isLiked(song.id)).toBe(false);
-    expect(library.likedSongs()).toEqual([]);
+    await vi.waitFor(() => expect(api.removeFavorite).toHaveBeenCalledWith(song.id));
+  });
+
+  it('creates and deletes account playlists through the API', async () => {
+    await library.createPlaylist('Road Trip', 'Driving music');
+    expect(api.createPlaylist).toHaveBeenCalledWith({ name: 'Road Trip', description: 'Driving music' });
+    expect(library.playlists()[0]?.id).toBe('playlist-1');
+
+    await library.deletePlaylist('playlist-1');
+    expect(api.deletePlaylist).toHaveBeenCalledWith('playlist-1');
+    expect(library.playlists()).toEqual([]);
   });
 });
 

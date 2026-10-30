@@ -34,6 +34,13 @@ export interface MediaPage {
   totalPages: number | null;
 }
 
+export interface PlaylistItem {
+  id: string;
+  name: string;
+  description: string;
+  songIds: string[];
+}
+
 export interface PlaybackSession {
   token: string;
   sessionId: string;
@@ -312,6 +319,86 @@ export class MusicApiService {
       }
       throw error;
     }
+  }
+
+  async favoriteSongs(): Promise<MediaItem[]> {
+    const response = await this.request<unknown>('GET', '/api/auth/library/favorites', { authenticated: true });
+    return normalizeMedia(response, 'song', 0).items;
+  }
+
+  async addFavorite(songId: string): Promise<void> {
+    await this.request('POST', `/api/auth/library/favorites/${encodeURIComponent(songId)}`, { authenticated: true });
+  }
+
+  async removeFavorite(songId: string): Promise<void> {
+    await this.request('DELETE', `/api/auth/library/favorites/${encodeURIComponent(songId)}`, { authenticated: true });
+  }
+
+  async playlists(): Promise<PlaylistItem[]> {
+    const response = await this.request<unknown>('GET', '/api/auth/library/playlists', { authenticated: true });
+    const rows = pathValue(response, 'data');
+    if (!Array.isArray(rows)) return [];
+    return rows.filter(isRecord).map((row) => ({
+      id: String(row['playlistId'] ?? ''),
+      name: String(row['name'] ?? ''),
+      description: String(row['description'] ?? ''),
+      songIds: Array.isArray(row['songIds']) ? row['songIds'].map(String) : [],
+    })).filter((playlist) => !!playlist.id);
+  }
+
+  async playlist(id: string): Promise<PlaylistItem> {
+    const response = await this.request<unknown>('GET', `/api/auth/library/playlists/${encodeURIComponent(id)}`, {
+      authenticated: true,
+    });
+    return this.normalizePlaylist(pathValue(response, 'data'));
+  }
+
+  async createPlaylist(payload: { name: string; description?: string }): Promise<PlaylistItem> {
+    const response = await this.request<unknown>('POST', '/api/auth/library/playlists', {
+      authenticated: true, body: payload,
+    });
+    return this.normalizePlaylist(pathValue(response, 'data'));
+  }
+
+  async updatePlaylist(id: string, payload: { name: string; description?: string }): Promise<PlaylistItem> {
+    const response = await this.request<unknown>('PUT', `/api/auth/library/playlists/${encodeURIComponent(id)}`, {
+      authenticated: true, body: payload,
+    });
+    return this.normalizePlaylist(pathValue(response, 'data'));
+  }
+
+  async deletePlaylist(id: string): Promise<void> {
+    await this.request('DELETE', `/api/auth/library/playlists/${encodeURIComponent(id)}`, { authenticated: true });
+  }
+
+  async addSongToPlaylist(playlistId: string, songId: string): Promise<void> {
+    await this.request('POST', `/api/auth/library/playlists/${encodeURIComponent(playlistId)}/songs/${encodeURIComponent(songId)}`, {
+      authenticated: true,
+    });
+  }
+
+  async removeSongFromPlaylist(playlistId: string, songId: string): Promise<void> {
+    await this.request('DELETE', `/api/auth/library/playlists/${encodeURIComponent(playlistId)}/songs/${encodeURIComponent(songId)}`, {
+      authenticated: true,
+    });
+  }
+
+  async reorderPlaylist(playlistId: string, songIds: string[]): Promise<void> {
+    await this.request('PUT', `/api/auth/library/playlists/${encodeURIComponent(playlistId)}/songs`, {
+      authenticated: true, body: songIds,
+    });
+  }
+
+  private normalizePlaylist(value: unknown): PlaylistItem {
+    if (!isRecord(value) || value['playlistId'] == null) {
+      throw new Error('The playlist response is missing playlistId.');
+    }
+    return {
+      id: String(value['playlistId']),
+      name: String(value['name'] ?? ''),
+      description: String(value['description'] ?? ''),
+      songIds: Array.isArray(value['songIds']) ? value['songIds'].map(String) : [],
+    };
   }
 
   async createArtist(form: FormData): Promise<void> {
