@@ -156,7 +156,10 @@ export class App implements AfterViewInit, OnDestroy {
     this.hls = null;
 
     try {
-      await this.api.ensureSessionReady();
+      const sessionReady = await this.api.ensureSessionReady();
+      if (!sessionReady) {
+        throw new Error('Your listening session has ended. Sign in again to continue.');
+      }
       if (generation !== this.playbackGeneration) {
         return;
       }
