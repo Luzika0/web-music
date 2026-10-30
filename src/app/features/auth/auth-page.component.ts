@@ -144,7 +144,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
             </button>
           </form>
           <p class="auth-switch"><a routerLink="/login">Back to log in</a></p>
-          <p class="auth-switch">Need another code? <a routerLink="/forgot-password">Request a new one</a></p>
+          <p class="auth-switch">Need another code? <a routerLink="/forgot-password" [queryParams]="{ email: email }">Request a new one</a></p>
         }
       </div>
     </section>
