@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LibraryService } from '../../core/services/library.service';
 
@@ -12,23 +12,18 @@ import { LibraryService } from '../../core/services/library.service';
         <h1>Your <em>Library.</em></h1>
         <p>Your liked songs and playlists are saved to your account and available across your devices.</p>
       </header>
-
       <a class="library-liked-feature" routerLink="/liked">
         <span class="liked-art" aria-hidden="true">♥</span>
         <span class="liked-feature-copy"><small>YOUR COLLECTION</small><strong>Liked Songs</strong><span>{{ library.likedSongs().length }} saved songs</span></span>
         <span class="shortcut-arrow" aria-hidden="true">↗</span>
       </a>
-
-      @if (library.error()) {
-        <div class="inline-alert error-alert" role="alert">{{ library.error() }}</div>
-      }
+      @if (library.error()) { <div class="inline-alert error-alert" role="alert">{{ library.error() }}</div> }
       <div class="section-heading library-section-heading">
         <div><p class="eyebrow">YOUR PLAYLISTS</p><h2>Made by you</h2></div>
         <button class="button button-light" type="button" (click)="showCreate.update(value => !value)">
           {{ showCreate() ? 'Cancel' : 'Create playlist' }}
         </button>
       </div>
-
       @if (showCreate()) {
         <form class="library-create-form" (submit)="create($event)">
           <label for="playlist-name">Playlist name</label>
@@ -38,22 +33,55 @@ import { LibraryService } from '../../core/services/library.service';
           <button class="button button-light" type="submit" [disabled]="saving() || !name().trim()">{{ saving() ? 'Creating…' : 'Save playlist' }}</button>
         </form>
       }
-
       @if (library.loading()) {
         <p class="empty-state" role="status">Loading your library…</p>
       } @else if (library.playlists().length) {
         <div class="demo-playlist-grid">
           @for (playlist of library.playlists(); track playlist.id) {
             <article class="demo-playlist-card">
-              <span class="demo-playlist-art" aria-hidden="true">♫</span>
+              <button class="demo-playlist-art" type="button" (click)="selectedId.set(playlist.id)" [attr.aria-label]="'Open ' + playlist.name">♫</button>
               <p class="eyebrow">YOUR PLAYLIST</p>
               <h3>{{ playlist.name }}</h3>
               <p>{{ playlist.description || 'No description' }}</p>
               <span class="demo-playlist-note">{{ playlist.songIds.length }} songs</span>
-              <button class="button button-quiet" type="button" (click)="remove(playlist.id)">Delete playlist</button>
+              <div class="playlist-card-actions">
+                <button class="button button-quiet" type="button" (click)="beginEdit(playlist.id, playlist.name, playlist.description)">Edit</button>
+                <button class="button button-quiet" type="button" (click)="remove(playlist.id)">Delete</button>
+              </div>
+              @if (editingId() === playlist.id) {
+                <form (submit)="saveEdit($event, playlist.id)">
+                  <label [for]="'edit-name-' + playlist.id">Playlist name</label>
+                  <input [id]="'edit-name-' + playlist.id" required maxlength="80" [value]="editName()" (input)="editName.set($any($event.target).value)">
+                  <label [for]="'edit-description-' + playlist.id">Description</label>
+                  <input [id]="'edit-description-' + playlist.id" maxlength="500" [value]="editDescription()" (input)="editDescription.set($any($event.target).value)">
+                  <button class="button button-light" type="submit">Save changes</button>
+                </form>
+              }
             </article>
           }
         </div>
+        @if (selectedPlaylist()) {
+          <section class="playlist-detail">
+            <div class="section-heading"><div><p class="eyebrow">PLAYLIST CONTENTS</p><h2>{{ selectedPlaylist()!.name }}</h2></div><button class="button button-quiet" type="button" (click)="selectedId.set(null)">Close</button></div>
+            @if (selectedPlaylist()!.songIds.length) {
+              @for (songId of selectedPlaylist()!.songIds; track songId) {
+                <div class="song-row">
+                  <span>{{ songName(songId) }}</span>
+                  <button class="button button-quiet" type="button" (click)="removeSong(selectedPlaylist()!.id, songId)">Remove</button>
+                </div>
+              }
+            } @else { <p>This playlist is empty. Add songs below.</p> }
+            <h3>Add a song</h3>
+            @for (song of library.songOptions(); track song.id) {
+              @if (!selectedPlaylist()!.songIds.includes(song.id)) {
+                <div class="song-row">
+                  <span>{{ song.name }} · {{ song.artistName || 'Artist' }}</span>
+                  <button class="button button-quiet" type="button" (click)="addSong(selectedPlaylist()!.id, song.id)">Add</button>
+                </div>
+              }
+            }
+          </section>
+        }
       } @else {
         <div class="empty-state">
           <span class="empty-icon" aria-hidden="true">♫</span>
@@ -71,6 +99,11 @@ export class LibraryPageComponent {
   readonly name = signal('');
   readonly description = signal('');
   readonly saving = signal(false);
+  readonly selectedId = signal<string | null>(null);
+  readonly editingId = signal<string | null>(null);
+  readonly editName = signal('');
+  readonly editDescription = signal('');
+  readonly selectedPlaylist = computed(() => this.library.playlists().find(item => item.id === this.selectedId()) ?? null);
 
   async create(event: Event): Promise<void> {
     event.preventDefault();
@@ -88,11 +121,44 @@ export class LibraryPageComponent {
     }
   }
 
+  beginEdit(id: string, name: string, description: string): void {
+    this.editingId.set(id);
+    this.editName.set(name);
+    this.editDescription.set(description);
+  }
+
+  async saveEdit(event: Event, id: string): Promise<void> {
+    event.preventDefault();
+    try {
+      const updated = await this.library['api'].updatePlaylist(id, { name: this.editName().trim(), description: this.editDescription().trim() });
+      this.library.playlists.update(items => items.map(item => item.id === id ? updated : item));
+      this.editingId.set(null);
+    } catch (error) {
+      this.library.error.set(error instanceof Error ? error.message : 'Could not update playlist.');
+    }
+  }
+
   async remove(id: string): Promise<void> {
     try {
       await this.library.deletePlaylist(id);
+      if (this.selectedId() === id) this.selectedId.set(null);
     } catch (error) {
       this.library.error.set(error instanceof Error ? error.message : 'Could not delete playlist.');
     }
+  }
+
+  async addSong(playlistId: string, songId: string): Promise<void> {
+    try { await this.library.addSongToPlaylist(playlistId, songId); }
+    catch (error) { this.library.error.set(error instanceof Error ? error.message : 'Could not add song.'); }
+  }
+
+  async removeSong(playlistId: string, songId: string): Promise<void> {
+    try { await this.library.removeSongFromPlaylist(playlistId, songId); }
+    catch (error) { this.library.error.set(error instanceof Error ? error.message : 'Could not remove song.'); }
+  }
+
+  songName(id: string): string {
+    const song = this.library.songOptions().find(item => item.id === id);
+    return song ? `${song.name} · ${song.artistName || 'Artist'}` : id;
   }
 }
