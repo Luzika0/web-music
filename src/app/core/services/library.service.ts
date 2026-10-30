@@ -85,6 +85,11 @@ export class LibraryService {
     });
   }
 
+  async loadPlaylist(id: string): Promise<void> {
+    const playlist = await this.api.playlist(id);
+    this.playlists.update((items) => items.map((item) => item.id === id ? playlist : item));
+  }
+
   async createPlaylist(name: string, description = ''): Promise<void> {
     const playlist = await this.api.createPlaylist({ name, description });
     this.playlists.update((items) => [playlist, ...items]);
