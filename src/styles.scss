@@ -4051,3 +4051,84 @@ button, a { touch-action: manipulation; }
 @media (min-width: 1200px) {
   .home-record { right: -40px; }
 }
+
+
+/* K-Song route-to-route UX polish: consistent focus, touch targets and responsive controls. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--brand-accent, #8de6c1) 82%, white);
+  outline-offset: 3px;
+}
+:where(button, input, select, textarea) { font: inherit; }
+:where(button, a) { -webkit-tap-highlight-color: transparent; }
+:where(button:disabled, input:disabled, select:disabled) { cursor: not-allowed; }
+.search-artist-link,
+.discover-artist-link {
+  display: block;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  border-radius: inherit;
+}
+.search-artist-link:focus-visible,
+.discover-artist-link:focus-visible { outline-offset: 5px; }
+.search-clear-button { flex: 0 0 auto; min-height: 42px; }
+.now-playing-mode {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted, #c9cadd);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+.now-playing-mode svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.now-playing-mode.is-active {
+  border-color: color-mix(in srgb, var(--brand-accent, #8de6c1) 30%, transparent);
+  background: color-mix(in srgb, var(--brand-accent, #8de6c1) 13%, transparent);
+  color: var(--brand-accent, #8de6c1);
+}
+.now-playing-mode > span {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  display: grid;
+  width: 13px;
+  height: 13px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand-accent, #8de6c1);
+  color: #08132d;
+  font-size: 9px;
+  font-weight: 800;
+}
+:root[data-theme="light"] .now-playing-mode { color: #596078; }
+:root[data-theme="light"] .now-playing-mode.is-active { color: #167c68; }
+.auth-panel { min-width: 0; }
+.auth-panel .form-stack { width: 100%; }
+.auth-panel .form-stack > button[type="submit"] { min-height: 50px; }
+.auth-panel input[type="date"] { color-scheme: dark; }
+:root[data-theme="light"] .auth-panel input[type="date"] { color-scheme: light; }
+.auth-panel .auth-switch a,
+.auth-panel .forgot-row a { text-underline-offset: 3px; }
+@media (max-width: 700px) {
+  .auth-layout { margin: 16px 0 28px; border-radius: 18px; }
+  .auth-panel { padding: 24px 18px; }
+  .auth-field-pair { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .catalog-search { grid-template-columns: 30px minmax(0, 1fr) auto auto; }
+  .catalog-search .search-clear-button { min-height: 40px; padding-inline: 10px; }
+  .now-playing-controls { gap: clamp(4px, 2vw, 14px); }
+  .now-playing-mode { width: 36px; height: 36px; }
+}
+@media (max-width: 380px) {
+  .auth-panel { padding-inline: 14px; }
+  .catalog-search { grid-template-columns: 26px minmax(0, 1fr) auto; }
+  .catalog-search .search-clear-button { grid-column: 2 / -1; justify-self: end; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-artist-link, .discover-artist-link, .now-playing-mode { transition: none !important; }
+}
