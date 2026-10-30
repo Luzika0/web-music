@@ -77,13 +77,6 @@
       <button type="button" aria-label="Dismiss message" (click)="api.notice.set('')">×</button>
     </div>
   }
-  @if (mediaCache.warning()) {
-    <div class="toast cache-warning" role="status">
-      <span>{{ mediaCache.warning() }}</span>
-      <button type="button" aria-label="Dismiss cache message" (click)="mediaCache.warning.set('')">×</button>
-    </div>
-  }
-
   <main class="page-content" id="main-content">
     <router-outlet />
   </main>

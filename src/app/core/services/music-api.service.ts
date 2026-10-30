@@ -230,6 +230,32 @@ export class MusicApiService {
     }
   }
 
+  async initializeSession(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    let storedSession: string | null;
+    try {
+      storedSession = sessionStorage.getItem(SESSION_KEY);
+    } catch {
+      storedSession = null;
+    }
+
+    if (!this.session) {
+      if (storedSession !== null) {
+        this.expireSession();
+      }
+      return;
+    }
+
+    try {
+      await this.refreshAccessToken();
+    } catch {
+      // Refresh failures expire the session; the app can then continue as signed out.
+    }
+  }
+
   async songs(page: number, size: number, searchText = ''): Promise<MediaPage> {
     const cacheUser = this.session?.id ?? 'anonymous';
     const cacheKey = `songs:${page}:${size}:${searchText.trim()}`;
@@ -384,8 +410,12 @@ export class MusicApiService {
 
   private async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
     const authenticated = options.authenticated ?? this.isProtectedPath(path);
-    if (authenticated) {
-      await this.refreshIfExpiring();
+    if (authenticated && options.retryUnauthorized !== false) {
+      if (path.includes('/song/')) {
+        await this.refreshPlaybackAuthorization();
+      } else {
+        await this.refreshIfExpiring();
+      }
     }
     const accessTokenUsed = authenticated ? this.session?.accessToken : null;
     const headers = this.requestHeaders(options, authenticated);
@@ -427,12 +457,21 @@ export class MusicApiService {
       || path.includes('/media/image');
   }
 
-  private async refreshIfExpiring(): Promise<void> {
+  async refreshPlaybackAuthorization(): Promise<void> {
+    if (!this.session?.refreshToken) {
+      this.expireSession();
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+    await this.refreshAccessToken();
+  }
+
+  private async refreshIfExpiring(requireVerifiableToken = false): Promise<void> {
     if (!this.session) {
       return;
     }
     const expiration = this.expirySeconds(this.session.accessToken);
-    if (expiration !== null && expiration * 1000 <= Date.now() + this.config.refreshBufferSeconds * 1000) {
+    if ((expiration === null && requireVerifiableToken)
+      || (expiration !== null && expiration * 1000 <= Date.now() + this.config.refreshBufferSeconds * 1000)) {
       await this.refreshAccessToken();
     }
   }
@@ -482,7 +521,7 @@ export class MusicApiService {
     controller: AbortController,
     onTakeover: () => void,
   ): Promise<void> {
-    await this.refreshIfExpiring();
+    await this.refreshPlaybackAuthorization();
     const accessTokenUsed = this.session?.accessToken;
     const url = this.absoluteUrl(`/api/auth/song/${encodeURIComponent(songId)}/playback-events`);
     const request = (): Promise<Response> => fetch(url, {
@@ -655,7 +694,11 @@ export class MusicApiService {
     this.session = null;
     this.user.set(null);
     if (isPlatformBrowser(this.platformId)) {
-      sessionStorage.removeItem(SESSION_KEY);
+      try {
+        sessionStorage.removeItem(SESSION_KEY);
+      } catch {
+        // Keep the in-memory session cleared when browser storage is unavailable.
+      }
     }
   }
 

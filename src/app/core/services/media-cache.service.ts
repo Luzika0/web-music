@@ -11,7 +11,6 @@ const MAX_CACHED_PAGE_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 @Injectable({ providedIn: 'root' })
 export class MediaCacheService {
-  readonly warning = signal('');
   readonly persistent = signal(false);
 
   private readonly platformId = inject(PLATFORM_ID);
@@ -96,7 +95,6 @@ export class MediaCacheService {
 
   reportUnavailable(): void {
     this.persistent.set(false);
-    this.warning.set('Local media caching is unavailable in this browser. You can continue listening while online.');
   }
 
   private database(): Promise<Database> {

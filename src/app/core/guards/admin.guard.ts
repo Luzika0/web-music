@@ -1,20 +1,21 @@
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { requireAuthenticatedSession } from './authenticated.guard';
 import { MusicApiService } from '../services/music-api.service';
 
-export function adminGuard() {
+export async function adminGuard() {
   const api = inject(MusicApiService);
   const router = inject(Router);
+
+  const authentication = await requireAuthenticatedSession(api, router, '/admin');
+  if (authentication !== true) {
+    return authentication;
+  }
 
   if (api.isAdmin()) {
     return true;
   }
 
-  api.notice.set(api.user()
-    ? 'Creator studio access requires the admin permission from your account.'
-    : 'Please sign in with an authorized account to open the creator studio.');
-
-  return api.user()
-    ? router.createUrlTree(['/'])
-    : router.createUrlTree(['/login'], { queryParams: { next: 'admin' } });
+  api.notice.set('Creator studio access requires the admin permission from your account.');
+  return router.createUrlTree(['/']);
 }

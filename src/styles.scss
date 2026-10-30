@@ -1965,7 +1965,10 @@ body {
 :root[data-theme="light"] .song-row { border-color: #e8eaf0; }
 :root[data-theme="light"] .song-row:hover { background: #f2f6f5; }
 :root[data-theme="light"] .like-button.liked,
-:root[data-theme="light"] .like-button:hover:not(:disabled),
+:root[data-theme="light"] .like-button:hover:not(:disabled) {
+  background: #fcebf0;
+  color: #bb4269;
+}
 :root[data-theme="light"] .play-button:hover:not(:disabled) { color: #167c68; }
 :root[data-theme="light"] .library-liked-feature {
   border-color: #dfe5ec;
@@ -3136,7 +3139,7 @@ body {
 :root[data-theme="light"] .admin-delete-target { border-color: #f0d7db; background: #fff8f8; }
 :root[data-theme="light"] .delete-target-icon { background: #fff0f1; color: #96384a; }
 :root[data-theme="light"] .admin-delete-target strong { color: #96384a; }
-@media (max-width: 760px) {
+@media (max-width: 1000px) {
   .admin-record-overview { grid-template-columns: minmax(0,1fr); }
 }
 @media (max-width: 420px) {
@@ -3264,7 +3267,7 @@ body {
   .admin-page { padding-top: 34px; }
   .admin-heading h1 { font-size: clamp(2.5rem,9vw,4rem); }
 }
-@media (max-width: 580px) {
+@media (max-width: 1000px) {
   .admin-grid { grid-template-columns: minmax(0,1fr); }
   .admin-grid > .admin-card-column, .admin-grid > .upload-card { grid-column: 1; grid-row: auto; }
 }

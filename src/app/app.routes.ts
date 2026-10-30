@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authenticatedGuard } from './core/guards/authenticated.guard';
 import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
@@ -35,6 +36,7 @@ export const routes: Routes = [
   {
     path: 'now-playing',
     title: 'Now Playing | K-Song',
+    canActivate: [authenticatedGuard],
     loadComponent: () => import('./features/player/now-playing-page.component').then((module) => module.NowPlayingPageComponent),
   },
   {

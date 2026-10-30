@@ -238,8 +238,7 @@ export class AuthPageComponent implements OnInit {
           break;
         case 'login': {
           await this.api.login(this.identity, this.password);
-          const next = this.route.snapshot.queryParamMap.get('next');
-          await this.router.navigate([next === 'admin' && this.api.isAdmin() ? '/admin' : '/']);
+          await this.router.navigate([this.api.isAdmin() ? '/admin' : '/']);
           break;
         }
         case 'forgot-password':

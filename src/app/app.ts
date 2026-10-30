@@ -4,7 +4,6 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { MusicApiService } from './core/services/music-api.service';
 import { getAppConfig } from './core/config/app-config';
 import { PlaybackService } from './core/services/playback.service';
-import { MediaCacheService } from './core/services/media-cache.service';
 import { textLanguage } from './shared/utils/text-language';
 import { MediaImageComponent } from './shared/components/media-image.component';
 
@@ -17,7 +16,6 @@ import { MediaImageComponent } from './shared/components/media-image.component';
 export class App implements AfterViewInit, OnDestroy {
   readonly api = inject(MusicApiService);
   readonly player = inject(PlaybackService);
-  readonly mediaCache = inject(MediaCacheService);
   readonly textLanguage = textLanguage;
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
@@ -60,6 +58,11 @@ export class App implements AfterViewInit, OnDestroy {
             this.audioElement.nativeElement.removeAttribute('src');
             this.audioElement.nativeElement.load();
           }
+        }
+      });
+      effect(() => {
+        if (!this.api.user() && this.player.currentSong()) {
+          this.player.stop();
         }
       });
     }
@@ -139,12 +142,17 @@ export class App implements AfterViewInit, OnDestroy {
     this.hls = null;
 
     try {
+      await this.api.refreshPlaybackAuthorization();
+      if (generation !== this.playbackGeneration) {
+        return;
+      }
       const HlsModule = await import('hls.js');
       if (generation !== this.playbackGeneration) {
         return;
       }
       const Hls = HlsModule.default;
       if (Hls.isSupported()) {
+        let retriedUnauthorized = false;
         const instance = new Hls({
           xhrSetup: (xhr) => {
             for (const [name, value] of Object.entries(this.api.playbackHeaders(playbackToken))) {
@@ -161,7 +169,20 @@ export class App implements AfterViewInit, OnDestroy {
         });
         instance.on(Hls.Events.ERROR, (_event, data) => {
           if (generation === this.playbackGeneration && data.fatal) {
-            this.player.setError('The stream could not be loaded. Check your connection and try the track again.');
+            if (data.response?.code === 401 && !retriedUnauthorized) {
+              retriedUnauthorized = true;
+              void this.api.refreshPlaybackAuthorization()
+                .then(() => {
+                  if (generation === this.playbackGeneration) {
+                    instance.startLoad();
+                  }
+                })
+                .catch((error: unknown) => {
+                  this.player.setError(this.api.toUserMessage(error));
+                });
+            } else {
+              this.player.setError('The stream could not be loaded. Check your connection and try the track again.');
+            }
           }
         });
         instance.loadSource(url);
