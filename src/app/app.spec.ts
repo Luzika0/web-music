@@ -284,7 +284,7 @@ describe('authenticated route access', () => {
       expect(router.serializeUrl(result)).toBe('/login?next=%2Fnow-playing');
     }
   });
-});});
+});
 
 describe('MusicApiService', () => {
   let api: MusicApiService;
