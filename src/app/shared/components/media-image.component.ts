@@ -1,5 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import { ChangeDetectorRef, Component, Input, OnChanges, OnDestroy, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnChanges, OnDestroy, PLATFORM_ID, effect, inject } from '@angular/core';
 import { MusicApiService } from '../../core/services/music-api.service';
 
 @Component({
@@ -74,20 +74,31 @@ export class MediaImageComponent implements OnChanges, OnDestroy {
   private readonly changeDetector = inject(ChangeDetectorRef);
   private version = 0;
 
+  constructor() {
+    // Re-run artwork loading when the signed-in account changes, even if the card itself stays mounted.
+    effect(() => {
+      this.api.user();
+      this.loadImage();
+    });
+  }
+
   ngOnChanges(): void {
+    this.loadImage();
+  }
+
+  private loadImage(): void {
     const version = ++this.version;
     this.revokeSource();
     this.imageReady = false;
     this.failed = false;
     this.loading = isPlatformBrowser(this.platformId) && Boolean(this.imageKey && this.api.user());
     if (!this.loading) {
+      this.changeDetector.markForCheck();
       return;
     }
 
     void this.api.imageBlob(this.imageKey).then((image) => {
-      if (version !== this.version) {
-        return;
-      }
+      if (version !== this.version) return;
       this.source = URL.createObjectURL(image);
       this.loading = false;
       this.changeDetector.markForCheck();

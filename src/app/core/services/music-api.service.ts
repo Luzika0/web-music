@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { getAppConfig } from '../config/app-config';
 import { AdminPermissionAdapter } from '../auth/admin-permission.adapter';
-import { MediaCacheService } from './media-cache.service';
+import { IMAGE_CACHE_FRESH_MS, PAGE_CACHE_FRESH_MS, MediaCacheService } from './media-cache.service';
 
 export interface SessionUser {
   id: string;
@@ -199,6 +199,10 @@ export class MusicApiService {
       throw new Error('The login response is missing data.token.acessToken, data.token.userId, or data.token.refreshToken.');
     }
 
+    const previousUserId = this.session?.id;
+    if (previousUserId && previousUserId !== String(userId)) {
+      void this.mediaCache.clearUser(previousUserId).catch(() => this.mediaCache.reportUnavailable());
+    }
     this.sessionGeneration += 1;
     this.session = {
       id: String(userId),
@@ -223,7 +227,6 @@ export class MusicApiService {
   }
 
   async logout(): Promise<void> {
-    const userId = this.session?.id;
     try {
       if (this.session) {
         await this.request('POST', '/api/auth/log-out', { authenticated: true, retryUnauthorized: false });
@@ -277,6 +280,8 @@ export class MusicApiService {
   async songs(page: number, size: number, searchText = ''): Promise<MediaPage> {
     const cacheUser = this.session?.id ?? 'anonymous';
     const cacheKey = `songs:${page}:${size}:${searchText.trim()}`;
+    const cached = await this.readCachedPageEntry<MediaPage>(cacheUser, cacheKey);
+    if (cached && Date.now() - cached.cachedAt < PAGE_CACHE_FRESH_MS) return cached.value;
     try {
       const response = await this.request<unknown>('GET', '/api/auth/media/list-song', {
         // Music Service's controller requires searchText even though the client collection omits it.
@@ -286,10 +291,7 @@ export class MusicApiService {
       await this.cachePage(cacheUser, cacheKey, result);
       return result;
     } catch (error) {
-      if (error instanceof ApiRequestError && error.status === 0) {
-        const cached = await this.readCachedPage<MediaPage>(cacheUser, cacheKey);
-        if (cached) return cached;
-      }
+      if (error instanceof ApiRequestError && error.status === 0 && cached) return cached.value;
       throw error;
     }
   }
@@ -300,52 +302,99 @@ export class MusicApiService {
       params = params.set('searchText', searchText.trim());
     }
     const cacheKey = `artists:${page}:${size}:${searchText.trim()}`;
+    const cached = await this.readCachedPageEntry<MediaPage>('public', cacheKey);
+    if (cached && Date.now() - cached.cachedAt < PAGE_CACHE_FRESH_MS) return cached.value;
     try {
       const response = await this.request<unknown>('GET', '/api/auth/media/artist', { params });
       const result = normalizeMedia(response, 'artist', page);
       await this.cachePage('public', cacheKey, result);
       return result;
     } catch (error) {
-      if (error instanceof ApiRequestError && error.status === 0) {
-        const cached = await this.readCachedPage<MediaPage>('public', cacheKey);
-        if (cached) return cached;
-      }
+      if (error instanceof ApiRequestError && error.status === 0 && cached) return cached.value;
       throw error;
     }
   }
 
   async createArtist(form: FormData): Promise<void> {
     await this.request('POST', '/api/auth/admin/create-artist', { body: form, authenticated: true });
+    await this.invalidateCatalogCache();
   }
 
   async uploadSong(form: FormData): Promise<void> {
     await this.request('POST', '/api/auth/admin/upload-song', { body: form, authenticated: true });
+    await this.invalidateCatalogCache();
   }
 
   async deleteSong(songId: string): Promise<void> {
     await this.request('DELETE', `/api/auth/admin/delete-song/${encodeURIComponent(songId)}`, { authenticated: true });
+    await this.invalidateCatalogCache();
+  }
+
+  private async invalidateCatalogCache(): Promise<void> {
+    try {
+      await this.mediaCache.invalidateCatalog();
+    } catch {
+      this.mediaCache.reportUnavailable();
+    }
   }
 
 
   async libraryFavorites(): Promise<MediaItem[]> {
-    const response = await this.request<unknown>('GET', '/api/auth/library/favorites', { authenticated: true });
-    return normalizeMedia(response, 'song', 0).items;
+    const userId = this.session?.id;
+    if (!userId) throw new Error('Sign in to view your liked songs.');
+    const key = 'library:favorites';
+    const cached = await this.readCachedPageEntry<MediaItem[]>(userId, key);
+    if (cached && Date.now() - cached.cachedAt < 2 * 60 * 1000) return cached.value;
+    try {
+      const response = await this.request<unknown>('GET', '/api/auth/library/favorites', { authenticated: true });
+      const items = normalizeMedia(response, 'song', 0).items;
+      await this.cachePage(userId, key, items);
+      return items;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 0 && cached) return cached.value;
+      throw error;
+    }
   }
 
   async addLibraryFavorite(songId: string): Promise<void> {
     await this.request('POST', `/api/auth/library/favorites/${encodeURIComponent(songId)}`, { authenticated: true });
+    await this.invalidateLibraryPage('library:favorites');
   }
 
   async removeLibraryFavorite(songId: string): Promise<void> {
     await this.request('DELETE', `/api/auth/library/favorites/${encodeURIComponent(songId)}`, { authenticated: true });
+    await this.invalidateLibraryPage('library:favorites');
   }
 
   async libraryPlaylists(): Promise<unknown> {
-    return this.request<unknown>('GET', '/api/auth/library/playlists', { authenticated: true });
+    const userId = this.session?.id;
+    if (!userId) throw new Error('Sign in to view your playlists.');
+    const key = 'library:playlists';
+    const cached = await this.readCachedPageEntry<unknown>(userId, key);
+    if (cached && Date.now() - cached.cachedAt < 2 * 60 * 1000) return cached.value;
+    try {
+      const response = await this.request<unknown>('GET', '/api/auth/library/playlists', { authenticated: true });
+      await this.cachePage(userId, key, response);
+      return response;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 0 && cached) return cached.value;
+      throw error;
+    }
+  }
+
+  private async invalidateLibraryPage(key: string): Promise<void> {
+    if (!this.session) return;
+    try {
+      await this.mediaCache.deletePage(this.session.id, key);
+    } catch {
+      this.mediaCache.reportUnavailable();
+    }
   }
 
   async createLibraryPlaylist(payload: { name: string; description: string }): Promise<unknown> {
-    return this.request<unknown>('POST', '/api/auth/library/playlists', { body: payload, authenticated: true });
+    const result = await this.request<unknown>('POST', '/api/auth/library/playlists', { body: payload, authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
+    return result;
   }
 
   async getLibraryPlaylist(playlistId: number): Promise<unknown> {
@@ -353,23 +402,32 @@ export class MusicApiService {
   }
 
   async updateLibraryPlaylist(playlistId: number, payload: { name: string; description: string }): Promise<unknown> {
-    return this.request<unknown>('PUT', `/api/auth/library/playlists/${playlistId}`, { body: payload, authenticated: true });
+    const result = await this.request<unknown>('PUT', `/api/auth/library/playlists/${playlistId}`, { body: payload, authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
+    return result;
   }
 
   async deleteLibraryPlaylist(playlistId: number): Promise<void> {
     await this.request('DELETE', `/api/auth/library/playlists/${playlistId}`, { authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
   }
 
   async addSongToLibraryPlaylist(playlistId: number, songId: string): Promise<unknown> {
-    return this.request<unknown>('POST', `/api/auth/library/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`, { authenticated: true });
+    const result = await this.request<unknown>('POST', `/api/auth/library/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`, { authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
+    return result;
   }
 
   async removeSongFromLibraryPlaylist(playlistId: number, songId: string): Promise<unknown> {
-    return this.request<unknown>('DELETE', `/api/auth/library/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`, { authenticated: true });
+    const result = await this.request<unknown>('DELETE', `/api/auth/library/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`, { authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
+    return result;
   }
 
   async reorderLibraryPlaylist(playlistId: number, songIds: string[]): Promise<unknown> {
-    return this.request<unknown>('PUT', `/api/auth/library/playlists/${playlistId}/songs`, { body: songIds, authenticated: true });
+    const result = await this.request<unknown>('PUT', `/api/auth/library/playlists/${playlistId}/songs`, { body: songIds, authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
+    return result;
   }
 
   async playbackSession(songId: string): Promise<PlaybackSession> {
@@ -421,6 +479,8 @@ export class MusicApiService {
       throw new Error('Sign in to view artist and song artwork.');
     }
     const userId = this.session.id;
+    const cached = await this.readCachedImageEntry(userId, imageKey);
+    if (cached && Date.now() - cached.cachedAt < IMAGE_CACHE_FRESH_MS) return cached.value;
     const path = `/api/auth/media/image?r2Imagekey=${encodeURIComponent(imageKey)}`;
     await this.refreshIfExpiring();
     const accessTokenUsed = this.session?.accessToken;
@@ -433,8 +493,7 @@ export class MusicApiService {
       return image;
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 0) {
-        const cachedImage = await this.readCachedImage(userId, imageKey);
-        if (cachedImage) return cachedImage;
+        if (cached) return cached.value;
       }
       if (error instanceof HttpErrorResponse && error.status === 401) {
         if (!this.session?.accessToken || this.session.accessToken === accessTokenUsed) {
@@ -449,8 +508,7 @@ export class MusicApiService {
           return image;
         } catch (retryError) {
           if (retryError instanceof HttpErrorResponse && retryError.status === 0) {
-            const cachedImage = await this.readCachedImage(userId, imageKey);
-            if (cachedImage) return cachedImage;
+            if (cached) return cached.value;
           }
           throw this.readableError(retryError);
         }
@@ -674,9 +732,22 @@ export class MusicApiService {
     );
   }
 
-  private async readCachedPage<T>(userId: string, key: string): Promise<T | null> {
+  private async readCachedPageEntry<T>(userId: string, key: string): Promise<{ value: T; cachedAt: number } | null> {
     try {
-      return await this.mediaCache.getPage<T>(userId, key);
+      return await this.mediaCache.getPageEntry<T>(userId, key);
+    } catch {
+      this.mediaCache.reportUnavailable();
+      return null;
+    }
+  }
+
+  private async readCachedPage<T>(userId: string, key: string): Promise<T | null> {
+    return (await this.readCachedPageEntry<T>(userId, key))?.value ?? null;
+  }
+
+  private async readCachedImageEntry(userId: string, key: string): Promise<{ value: Blob; cachedAt: number } | null> {
+    try {
+      return await this.mediaCache.getImageEntry(userId, key);
     } catch {
       this.mediaCache.reportUnavailable();
       return null;
@@ -771,6 +842,10 @@ export class MusicApiService {
   }
 
   private clearSession(): void {
+    const previousUserId = this.session?.id;
+    if (previousUserId) {
+      void this.mediaCache.clearUser(previousUserId).catch(() => this.mediaCache.reportUnavailable());
+    }
     this.sessionGeneration += 1;
     this.session = null;
     this.user.set(null);
