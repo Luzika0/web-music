@@ -30,7 +30,7 @@ import { textLanguage } from '../../shared/utils/text-language';
           }
         </div>
       } @else {
-        <div class="empty-state"><span class="empty-icon" aria-hidden="true">♥</span><h2>{{ api.user() ? "Your favorites will live here" : "Sign in to see your Liked Songs" }}</h2><p>{{ api.user() ? "Find a song you love and tap its heart to save it to your account." : "Your saved songs are linked to your account and sync across devices." }}</p><a class="button button-light" [routerLink]="api.user() ? "/search" : "/login"">{{ api.user() ? "Search songs" : "Sign in" }}</a></div>
+        <div class="empty-state"><span class="empty-icon" aria-hidden="true">♥</span><h2>{{ api.user() ? 'Your favorites will live here' : 'Sign in to see your Liked Songs' }}</h2><p>{{ api.user() ? 'Find a song you love and tap its heart to save it to your account.' : 'Your saved songs are linked to your account and sync across devices.' }}</p><a class="button button-light" [routerLink]="api.user() ? '/search' : '/login'">{{ api.user() ? 'Search songs' : 'Sign in' }}</a></div>
       }
     </section>
   `,
