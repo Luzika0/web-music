@@ -72,6 +72,16 @@ export class App implements AfterViewInit, OnDestroy {
           this.player.stop();
         }
       });
+      effect(() => {
+        const account = this.api.user();
+        if (account) {
+          void this.library.loadFavorites().catch(() => undefined);
+          void this.library.loadPlaylists().catch(() => undefined);
+        } else {
+          this.library.likedSongs.set([]);
+          this.library.playlists.set([]);
+        }
+      });
     }
   }
 
