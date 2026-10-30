@@ -18,7 +18,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
         <span class="auth-art-small">A HOME FOR THE SOUNDTRACK OF YOU</span>
       </div>
       <div class="auth-panel">
-        <a class="back-link" routerLink="/">
+        <a class="back-link" routerLink="/" (click)="cancelPendingPlayback()">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6M9 12h11" /></svg>
           <span>Back to discovery</span>
         </a>
@@ -69,7 +69,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
               <span>{{ submitting ? 'Creating your account…' : 'Create account' }}</span>
             </button>
           </form>
-          <p class="auth-switch">Already one of us? <a routerLink="/login">Log in</a></p>
+          <p class="auth-switch">Already one of us? <a routerLink="/login" [queryParams]="returnQueryParams">Log in</a></p>
         } @else if (mode === 'verify') {
           <form class="form-stack" (ngSubmit)="submit()" #authForm="ngForm">
             <label for="verify-email">Email address</label>
@@ -82,8 +82,8 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
               <span>{{ submitting ? 'Verifying…' : 'Verify account' }}</span>
             </button>
           </form>
-          <p class="auth-switch">Already verified? <a routerLink="/login">Log in</a></p>
-          <p class="auth-switch">Wrong email address? <a routerLink="/register">Change your details</a></p>
+          <p class="auth-switch">Already verified? <a routerLink="/login" [queryParams]="returnQueryParams">Log in</a></p>
+          <p class="auth-switch">Wrong email address? <a routerLink="/register" [queryParams]="returnQueryParams">Change your details</a></p>
         } @else if (mode === 'login') {
           <form class="form-stack" (ngSubmit)="submit()" #authForm="ngForm">
             <label for="login-identity">Email or username</label>
@@ -101,13 +101,13 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
                 }
               </button>
             </div>
-            <div class="forgot-row"><span>Welcome back.</span><a routerLink="/forgot-password">Forgot password?</a></div>
+            <div class="forgot-row"><span>Welcome back.</span><a routerLink="/forgot-password" [queryParams]="returnQueryParams">Forgot password?</a></div>
             <button class="button button-light button-wide" type="submit" [disabled]="authForm.invalid || submitting" [attr.aria-busy]="submitting">
               @if (submitting) { <span class="button-loading-spinner" aria-hidden="true"></span> }
               <span>{{ submitting ? 'Signing you in…' : 'Log in' }}</span>
             </button>
           </form>
-          <p class="auth-switch">New to K-Song? <a routerLink="/register">Create an account</a></p>
+          <p class="auth-switch">New to K-Song? <a routerLink="/register" [queryParams]="returnQueryParams">Create an account</a></p>
         } @else if (mode === 'forgot-password') {
           <form class="form-stack" (ngSubmit)="submit()" #authForm="ngForm">
             <label for="forgot-email">Email address</label>
@@ -118,7 +118,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
               <span>{{ submitting ? 'Sending code…' : 'Send reset code' }}</span>
             </button>
           </form>
-          <p class="auth-switch"><a routerLink="/login">Back to log in</a></p>
+          <p class="auth-switch"><a routerLink="/login" [queryParams]="returnQueryParams">Back to log in</a></p>
         } @else {
           <form class="form-stack" (ngSubmit)="submit()" #authForm="ngForm">
             <label for="reset-email">Email address</label>
@@ -144,8 +144,8 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
               <span>{{ submitting ? 'Updating password…' : 'Reset password' }}</span>
             </button>
           </form>
-          <p class="auth-switch"><a routerLink="/login">Back to log in</a></p>
-          <p class="auth-switch">Need another code? <a routerLink="/forgot-password" [queryParams]="{ email: email }">Request a new one</a></p>
+          <p class="auth-switch"><a routerLink="/login" [queryParams]="returnQueryParams">Back to log in</a></p>
+          <p class="auth-switch">Need another code? <a routerLink="/forgot-password" [queryParams]="requestNewCodeQueryParams">Request a new one</a></p>
         }
       </div>
     </section>
@@ -155,6 +155,7 @@ export class AuthPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly api = inject(MusicApiService);
+  private readonly playback = inject(PlaybackService);
   private readonly title = inject(Title);
   private readonly changeDetector = inject(ChangeDetectorRef);
   mode: AuthMode = 'login';
@@ -176,6 +177,39 @@ export class AuthPageComponent implements OnInit {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   })();
+
+  /** Safe, same-origin return context shared by every step of account recovery. */
+  get safeNext(): string | null {
+    const requested = this.route.snapshot.queryParamMap.get('next');
+    return requested?.startsWith('/')
+      && !requested.startsWith('//')
+      && !requested.includes('\\')
+      ? requested
+      : null;
+  }
+
+  get returnQueryParams(): Record<string, string> {
+    return {
+      ...(this.safeNext ? { next: this.safeNext } : {}),
+      ...(this.route.snapshot.queryParamMap.get('signInToPlay') === '1' ? { signInToPlay: '1' } : {}),
+    };
+  }
+
+  get verifyQueryParams(): Record<string, string> {
+    return { ...this.returnQueryParams, email: this.email.trim() };
+  }
+
+  get verifiedLoginQueryParams(): Record<string, string> {
+    return { ...this.returnQueryParams, verified: '1' };
+  }
+
+  get resetLoginQueryParams(): Record<string, string> {
+    return { ...this.returnQueryParams, passwordReset: '1' };
+  }
+
+  get requestNewCodeQueryParams(): Record<string, string> {
+    return { ...this.returnQueryParams, email: this.email.trim() };
+  }
 
   get heading(): string {
     return {
@@ -227,6 +261,10 @@ export class AuthPageComponent implements OnInit {
     this.title.setTitle(`K-Song | ${this.heading}`);
   }
 
+  cancelPendingPlayback(): void {
+    this.playback.cancelPendingPlayback();
+  }
+
   togglePasswordVisibility(): void {
     this.passwordVisible = !this.passwordVisible;
   }
@@ -246,32 +284,33 @@ export class AuthPageComponent implements OnInit {
             password: this.password,
             dob: this.dob,
           });
-          await this.router.navigate(['/verify'], { queryParams: { email: this.email.trim() } });
+          await this.router.navigate(['/verify'], { queryParams: this.verifyQueryParams });
           break;
         case 'verify':
           await this.api.verifyOtp(this.email.trim(), this.otp.trim());
-          await this.router.navigate(['/login'], { queryParams: { verified: '1' } });
+          await this.router.navigate(['/login'], { queryParams: this.verifiedLoginQueryParams });
           break;
         case 'login': {
           await this.api.login(this.identity.trim(), this.password);
-          const requested = this.route.snapshot.queryParamMap.get('next');
-          // Only restore same-origin application paths, never an external redirect.
-          const safeNext = requested?.startsWith('/') && !requested.startsWith('//') ? requested : null;
-          const destination = safeNext ?? (this.api.isAdmin() ? '/admin' : '/');
+          const destination = this.safeNext ?? (this.api.isAdmin() ? '/admin' : '/');
           await this.router.navigateByUrl(destination);
-          await this.playback.resumePendingPlayback();
+          if (this.route.snapshot.queryParamMap.get('signInToPlay') === '1') {
+            await this.playback.resumePendingPlayback();
+          } else {
+            this.playback.cancelPendingPlayback();
+          }
           break;
         }
         case 'forgot-password':
           await this.api.requestPasswordReset(this.email.trim());
-          await this.router.navigate(['/reset-password'], { queryParams: { email: this.email.trim() } });
+          await this.router.navigate(['/reset-password'], { queryParams: this.verifyQueryParams });
           break;
         case 'reset-password':
           await this.api.resetPassword(this.email.trim(), this.otp.trim(), this.password);
           this.password = '';
           this.otp = '';
           await this.router.navigate(['/login'], {
-            queryParams: { passwordReset: '1' },
+            queryParams: this.resetLoginQueryParams,
             replaceUrl: true,
           });
           break;

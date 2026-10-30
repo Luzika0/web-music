@@ -1,5 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MediaItem, MusicApiService } from '../../core/services/music-api.service';
 import { PlaybackService } from '../../core/services/playback.service';
@@ -45,16 +45,16 @@ import { textLanguage } from '../../shared/utils/text-language';
         <a class="section-link" routerLink="/search">Find more <span aria-hidden="true">→</span></a>
       </div>
       @if (loading) {
-        <div class="home-song-grid" aria-label="Loading music">
+        <div class="home-song-grid" role="status" aria-label="Loading music">
           @for (placeholder of placeholders; track placeholder) { <div class="home-song-card"><span class="skeleton home-cover-skeleton"></span><span class="skeleton line-skeleton"></span></div> }
         </div>
       } @else if (error) {
-        <div class="inline-alert error-alert" role="alert">{{ error }} <a class="text-button" routerLink="/search">Try again from Search</a></div>
+        <div class="inline-alert error-alert" role="alert">{{ error }} <button class="text-button" type="button" (click)="retry()" [disabled]="loading">Try again</button> <a class="text-button" routerLink="/search">Browse Search</a></div>
       } @else if (songs.length) {
         <div class="home-song-grid">
           @for (song of songs; track song.id || $index) {
             <article class="home-song-card">
-              <button class="home-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id || player.loading()" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
+              <button class="home-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
                 <span aria-hidden="true">♫</span><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="home-cover-play" aria-hidden="true">▶</span>
               </button>
               <div class="home-song-meta" [attr.lang]="textLanguage(song.name, song.artistName)"><strong>{{ song.name }}</strong><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
@@ -72,7 +72,7 @@ import { textLanguage } from '../../shared/utils/text-language';
         <div><p class="eyebrow">MADE BY PEOPLE, FELT BY EVERYONE</p><h2 id="home-artists-heading">Artists to know</h2></div>
         <a class="section-link" routerLink="/artists">All artists <span aria-hidden="true">→</span></a>
       </div>
-      @if (artistsError) { <div class="inline-alert info-alert" role="status">{{ artistsError }}</div> }
+      @if (artistsError) { <div class="inline-alert error-alert" role="alert">{{ artistsError }} <button class="text-button" type="button" (click)="retry()" [disabled]="loading">Try again</button></div> }
       <div class="home-artist-grid">
         @for (artist of artists; track artist.id || $index) {
           <a class="home-artist-card" routerLink="/artists" [queryParams]="{ search: artist.name }">
@@ -92,6 +92,8 @@ export class HomePageComponent implements OnInit {
   readonly textLanguage = textLanguage;
   private readonly api = inject(MusicApiService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  private requestGeneration = 0;
   private readonly pageSize = getAppConfig().pageSize;
   readonly placeholders = [0, 1, 2, 3];
   songs: MediaItem[] = [];
@@ -103,6 +105,10 @@ export class HomePageComponent implements OnInit {
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) void this.load();
     else this.loading = false;
+  }
+
+  retry(): void {
+    if (!this.loading) void this.load();
   }
 
   initial(name: string): string {
@@ -123,16 +129,25 @@ export class HomePageComponent implements OnInit {
   }
 
   private async load(): Promise<void> {
+    const generation = ++this.requestGeneration;
     this.loading = true;
     this.error = '';
-    const [songs, artists] = await Promise.allSettled([
-      this.api.songs(0, 4),
-      this.api.artists(0, 4, ''),
-    ]);
-    if (songs.status === 'fulfilled') this.songs = songs.value.items;
-    if (artists.status === 'fulfilled') this.artists = artists.value.items;
-    this.error = songs.status === 'rejected' ? this.api.toUserMessage(songs.reason) : '';
-    this.artistsError = artists.status === 'rejected' ? this.api.toUserMessage(artists.reason) : '';
-    this.loading = false;
+    this.artistsError = '';
+    try {
+      const [songs, artists] = await Promise.allSettled([
+        this.api.songs(0, 4),
+        this.api.artists(0, 4, ''),
+      ]);
+      if (generation !== this.requestGeneration) return;
+      this.songs = songs.status === 'fulfilled' ? songs.value.items : [];
+      this.artists = artists.status === 'fulfilled' ? artists.value.items : [];
+      this.error = songs.status === 'rejected' ? this.api.toUserMessage(songs.reason) : '';
+      this.artistsError = artists.status === 'rejected' ? this.api.toUserMessage(artists.reason) : '';
+    } finally {
+      if (generation === this.requestGeneration) {
+        this.loading = false;
+        this.changeDetector.markForCheck();
+      }
+    }
   }
 }

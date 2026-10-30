@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { PLATFORM_ID } from '@angular/core';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { App } from './app';
@@ -17,6 +18,8 @@ import { MediaCacheService } from './core/services/media-cache.service';
 import { textLanguage } from './shared/utils/text-language';
 import { MediaImageComponent } from './shared/components/media-image.component';
 import { requireAuthenticatedSession } from './core/guards/authenticated.guard';
+import { SearchPageComponent } from './features/search/search-page.component';
+import { of } from 'rxjs';
 
 const SESSION_STORAGE_KEY = 'ksong.session.v1';
 const validAccessToken = () =>
@@ -162,6 +165,70 @@ describe('AuthPageComponent', () => {
     fixture.destroy();
   });
 
+  it('preserves a safe return destination through registration and verification', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AuthPageComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              url: [{ path: 'register' }],
+              queryParamMap: convertToParamMap({
+                next: '/discover?artistPage=2',
+                signInToPlay: '1',
+                email: 'listener@example.com',
+              }),
+            },
+          },
+        },
+        { provide: MusicApiService, useValue: {} },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AuthPageComponent);
+    const component = fixture.componentInstance;
+    expect(component.returnQueryParams).toEqual({
+      next: '/discover?artistPage=2',
+      signInToPlay: '1',
+    });
+    expect(component.verifyQueryParams).toEqual({
+      next: '/discover?artistPage=2',
+      signInToPlay: '1',
+      email: 'listener@example.com',
+    });
+    expect(component.verifiedLoginQueryParams).toEqual({
+      next: '/discover?artistPage=2',
+      signInToPlay: '1',
+      verified: '1',
+    });
+    fixture.destroy();
+  });
+
+  it('rejects an external login return destination', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AuthPageComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              url: [{ path: 'login' }],
+              queryParamMap: convertToParamMap({ next: '//attacker.example/path' }),
+            },
+          },
+        },
+        { provide: MusicApiService, useValue: {} },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AuthPageComponent);
+    expect(fixture.componentInstance.safeNext).toBeNull();
+    fixture.destroy();
+  });
+
   it('shows a password-reset success message on the login page', async () => {
     await TestBed.configureTestingModule({
       imports: [AuthPageComponent],
@@ -204,6 +271,40 @@ describe('AuthPageComponent', () => {
 
     expect(api.login).toHaveBeenCalledWith('admin', 'secret');
     expect(router.navigateByUrl).toHaveBeenCalledWith('/admin');
+    fixture.destroy();
+  });
+});
+
+describe('SearchPageComponent SSR behavior', () => {
+  it('does not start catalog HTTP requests while rendering a search URL on the server', async () => {
+    const api = {
+      songs: vi.fn(),
+      artists: vi.fn(),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    const params = convertToParamMap({ q: 'night drive' });
+    await TestBed.configureTestingModule({
+      imports: [SearchPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: PLATFORM_ID, useValue: 'server' },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: { queryParamMap: params },
+            queryParamMap: of(params),
+          },
+        },
+        { provide: MusicApiService, useValue: api },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(SearchPageComponent);
+    fixture.componentInstance.ngOnInit();
+
+    expect(fixture.componentInstance.query).toBe('night drive');
+    expect(api.songs).not.toHaveBeenCalled();
+    expect(api.artists).not.toHaveBeenCalled();
     fixture.destroy();
   });
 });
@@ -525,6 +626,25 @@ describe('MusicApiService', () => {
       }],
       page: 0,
       totalPages: 3,
+    });
+  });
+
+  it('never treats an artist ID as a playable song ID', async () => {
+    const songs = api.songs(0, 8);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const request = http.expectOne('/api/auth/media/list-song?page=0&size=8&searchText=');
+    request.flush({
+      data: {
+        content: [{ artistId: 'artist-42', songName: 'Missing song identifier' }],
+        totalPage: 1,
+      },
+    });
+
+    const result = await songs;
+    expect(result.items[0]).toMatchObject({
+      id: '',
+      artistId: 'artist-42',
+      name: 'Missing song identifier',
     });
   });
 
@@ -945,6 +1065,38 @@ describe('PlaybackService authentication before playback', () => {
     expect(playback.queue()).toEqual([]);
   });
 
+  it('does not resume a guest track after the sign-in request is cancelled', async () => {
+    let signedIn = false;
+    const api = {
+      user: vi.fn(() => signedIn ? ({ id: 'user-1' }) : null),
+      playbackSession: vi.fn(),
+      playbackStatus: vi.fn(),
+      watchPlaybackEvents: vi.fn(() => () => {}),
+      absoluteUrl: vi.fn((path: string) => path),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    const router = { url: '/discover', navigate: vi.fn(async () => true) };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: router },
+        { provide: MusicApiService, useValue: api },
+      ],
+    });
+    const playback = TestBed.inject(PlaybackService);
+    const song: MediaItem = {
+      id: 'song-cancelled', artistId: 'artist-1', name: 'Cancelled track',
+      artistName: 'Artist', imageKey: '', kind: 'song',
+    };
+
+    await playback.play(song);
+    playback.cancelPendingPlayback();
+    signedIn = true;
+    await playback.resumePendingPlayback();
+
+    expect(api.playbackSession).not.toHaveBeenCalled();
+    expect(playback.currentSong()).toBeNull();
+  });
+
   it('resumes a pending track only after a user has signed in', async () => {
     let signedIn = false;
     const api = {
@@ -1031,6 +1183,58 @@ describe('PlaybackService queue', () => {
     expect(playback.queueIndex()).toBe(0);
     expect(api.playbackSession).toHaveBeenCalledTimes(3);
 
+    playback.stop();
+    expect(playback.currentSong()).toBeNull();
+    expect(playback.queue()).toEqual([]);
+    expect(playback.queueIndex()).toBe(-1);
+  });
+});
+
+describe('PlaybackService HLS authorization recovery', () => {
+  it('renews one expired playback session and stops retrying after a second unauthorized stream', async () => {
+    let sessionNumber = 0;
+    const api = {
+      user: vi.fn(() => ({ id: 'user-1' })),
+      playbackSession: vi.fn(async (songId: string) => {
+        sessionNumber += 1;
+        return {
+          token: `playback-token-${sessionNumber}`,
+          sessionId: `session-${sessionNumber}`,
+          expiresAt: '2099-01-01T00:00:00Z',
+          songId,
+        };
+      }),
+      playbackStatus: vi.fn(async () => true),
+      watchPlaybackEvents: vi.fn(() => () => {}),
+      absoluteUrl: vi.fn((path: string) => path),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: { navigate: vi.fn(async () => true) } },
+        { provide: MusicApiService, useValue: api },
+      ],
+    });
+    const playback = TestBed.inject(PlaybackService);
+    const song: MediaItem = {
+      id: 'song-expiring', artistId: 'artist-1', name: 'Expiring stream',
+      artistName: 'Artist', imageKey: '', kind: 'song',
+    };
+
+    await playback.play(song);
+    expect(playback.token()).toBe('playback-token-1');
+
+    await Promise.all([
+      playback.renewCurrentPlayback(),
+      playback.renewCurrentPlayback(),
+    ]);
+    expect(api.playbackSession).toHaveBeenCalledTimes(2);
+    expect(playback.token()).toBe('playback-token-2');
+    expect(playback.currentSong()?.id).toBe(song.id);
+
+    await playback.renewCurrentPlayback();
+    expect(api.playbackSession).toHaveBeenCalledTimes(2);
+    expect(playback.error()).toContain('could not be renewed');
     playback.stop();
   });
 });

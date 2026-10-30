@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, MusicApiService } from '../../core/services/music-api.service';
@@ -22,11 +23,11 @@ import { textLanguage } from '../../shared/utils/text-language';
         <label class="sr-only" for="catalog-query">Search songs and artists</label>
         <span class="catalog-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></span>
         <input id="catalog-query" name="query" type="search" [(ngModel)]="query" placeholder="What are you in the mood for?" autocomplete="off" />
-        <button class="button button-light" type="submit" [disabled]="loading || !query.trim()" [attr.aria-busy]="loading">
+        <button class="button button-light" type="submit" [disabled]="!query.trim()" [attr.aria-busy]="loading">
           @if (loading) { <span class="button-loading-spinner" aria-hidden="true"></span> }
           <span>{{ loading ? 'Searching…' : 'Search' }}</span>
         </button>
-        @if (query) { <button class="button button-quiet search-clear-button" type="button" (click)="clearSearch()" [disabled]="loading">Clear</button> }
+        @if (query) { <button class="button button-quiet search-clear-button" type="button" (click)="clearSearch()">Clear</button> }
       </form>
 
       @if (error) {
@@ -44,12 +45,12 @@ import { textLanguage } from '../../shared/utils/text-language';
             <div class="song-list">
               @for (song of songs; track song.id || $index) {
                 <article class="song-row">
-                  <button class="song-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id || player.loading()" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
+                  <button class="song-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
                     <span aria-hidden="true">♫</span><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="play-overlay" aria-hidden="true">▶</span>
                   </button>
                   <div class="song-details" [attr.lang]="textLanguage(song.name, song.artistName)"><h3>{{ song.name }}</h3><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
                   <button class="like-button" type="button" [disabled]="!song.id" [class.liked]="library.isLiked(song.id)" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
-                  <button class="play-button" type="button" [disabled]="!song.id || player.loading()" (click)="player.play(song, songs)" [attr.aria-label]="'Play ' + song.name"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
+                  <button class="play-button" type="button" [disabled]="!song.id" (click)="player.play(song, songs)" [attr.aria-label]="'Play ' + song.name"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
                 </article>
               }
             </div>
@@ -83,6 +84,9 @@ export class SearchPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly pageSize = getAppConfig().pageSize;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   query = '';
   songs: MediaItem[] = [];
   artists: MediaItem[] = [];
@@ -93,10 +97,10 @@ export class SearchPageComponent implements OnInit {
   private searchGeneration = 0;
 
   ngOnInit(): void {
-    this.route.queryParamMap.subscribe((params) => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.query = params.get('q') ?? '';
       const term = this.query.trim();
-      if (term) void this.runSearch(term);
+      if (term && isPlatformBrowser(this.platformId)) void this.runSearch(term);
       else {
         this.searchGeneration += 1;
         this.songs = [];
@@ -113,6 +117,10 @@ export class SearchPageComponent implements OnInit {
     const term = this.query.trim();
     if (!term) {
       this.clearSearch();
+      return;
+    }
+    if (term === (this.route.snapshot.queryParamMap.get('q') ?? '')) {
+      void this.runSearch(term);
       return;
     }
     void this.router.navigate([], {
@@ -144,19 +152,25 @@ export class SearchPageComponent implements OnInit {
     this.hasSearched = true;
     this.error = '';
     this.partialError = '';
-    const [songs, artists] = await Promise.allSettled([
-      this.api.songs(0, this.pageSize, term),
-      this.api.artists(0, this.pageSize, term),
-    ]);
-    if (generation !== this.searchGeneration) return;
-    this.songs = songs.status === 'fulfilled' ? songs.value.items : [];
-    this.artists = artists.status === 'fulfilled' ? artists.value.items : [];
-    if (songs.status === 'rejected' && artists.status === 'rejected') {
-      this.error = this.api.toUserMessage(songs.reason);
-    } else if (songs.status === 'rejected' || artists.status === 'rejected') {
-      this.partialError = 'Some catalog results could not be loaded. The available results are shown below.';
+    try {
+      const [songs, artists] = await Promise.allSettled([
+        this.api.songs(0, this.pageSize, term),
+        this.api.artists(0, this.pageSize, term),
+      ]);
+      if (generation !== this.searchGeneration) return;
+      this.songs = songs.status === 'fulfilled' ? songs.value.items : [];
+      this.artists = artists.status === 'fulfilled' ? artists.value.items : [];
+      if (songs.status === 'rejected' && artists.status === 'rejected') {
+        this.error = this.api.toUserMessage(songs.reason);
+      } else if (songs.status === 'rejected' || artists.status === 'rejected') {
+        this.partialError = 'Some catalog results could not be loaded. The available results are shown below.';
+      }
+    } finally {
+      if (generation === this.searchGeneration) {
+        this.loading = false;
+        this.changeDetector.markForCheck();
+      }
     }
-    this.loading = false;
   }
 
   colorFor(item: MediaItem): string {

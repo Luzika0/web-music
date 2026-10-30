@@ -1,8 +1,9 @@
 import { isPlatformBrowser } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MediaItem, MediaPage, MusicApiService } from '../../core/services/music-api.service';
 import { LibraryService } from '../../core/services/library.service';
 import { PlaybackService } from '../../core/services/playback.service';
@@ -39,7 +40,7 @@ import { getAppConfig } from '../../core/config/app-config';
           <label class="sr-only" for="artist-search">Search artists</label>
           <input id="artist-search" name="artistSearch" type="search" [(ngModel)]="artistSearch"
             placeholder="Search artists" autocomplete="off" />
-          <button type="submit" class="button button-light" [disabled]="artistsLoading" [attr.aria-busy]="artistsLoading">
+          <button type="submit" class="button button-light" [attr.aria-busy]="artistsLoading">
             @if (artistsLoading) { <span class="button-loading-spinner" aria-hidden="true"></span> }
             <span>{{ artistsLoading ? 'Searching…' : 'Search' }}</span>
           </button>
@@ -48,7 +49,7 @@ import { getAppConfig } from '../../core/config/app-config';
       @if (artistsError) {
         <div class="inline-alert error-alert" role="alert">{{ artistsError }} <button type="button" class="text-button" (click)="loadArtists()">Try again</button></div>
       } @else if (artistsLoading && !artistsPage) {
-        <div class="artist-grid" aria-label="Loading artists">
+        <div class="artist-grid" role="status" aria-label="Loading artists">
           @for (placeholder of placeholders; track placeholder) {
             <div class="artist-card skeleton-card"><div class="skeleton artist-skeleton"></div><div class="skeleton line-skeleton"></div></div>
           }
@@ -70,7 +71,7 @@ import { getAppConfig } from '../../core/config/app-config';
         @if (artistsPage?.totalPages !== 1) {
           <div class="pagination">
             <button type="button" class="button button-quiet" (click)="changeArtistPage(-1)" [disabled]="artistPage === 0 || artistsLoading">← Previous</button>
-            <span>Page {{ artistPage + 1 }}{{ artistsPage?.totalPages ? ' of ' + artistsPage?.totalPages : '' }}</span>
+            <span aria-live="polite" aria-atomic="true">Page {{ artistPage + 1 }}{{ artistsPage?.totalPages ? ' of ' + artistsPage?.totalPages : '' }}</span>
             <button type="button" class="button button-quiet" (click)="changeArtistPage(1)" [disabled]="artistsLoading || !canGoNext(artistsPage)">Next →</button>
           </div>
         }
@@ -87,7 +88,7 @@ import { getAppConfig } from '../../core/config/app-config';
       @if (songsError) {
         <div class="inline-alert error-alert" role="alert">{{ songsError }} <button type="button" class="text-button" (click)="loadSongs()">Try again</button></div>
       } @else if (songsLoading && !songsPage) {
-        <div class="song-list" aria-label="Loading songs">
+        <div class="song-list" role="status" aria-label="Loading songs">
           @for (placeholder of placeholders; track placeholder) {
             <div class="song-row"><span class="skeleton song-skeleton"></span><span class="skeleton line-skeleton"></span><span class="skeleton line-skeleton short-line"></span></div>
           }
@@ -96,7 +97,7 @@ import { getAppConfig } from '../../core/config/app-config';
         <div class="song-list">
           @for (song of songsPage?.items; track song.id || $index; let index = $index) {
             <article class="song-row">
-              <button class="song-row-main" type="button" [attr.lang]="textLanguage(song.name, song.artistName)" [disabled]="!song.id || player.loading()"
+              <button class="song-row-main" type="button" [attr.lang]="textLanguage(song.name, song.artistName)" [disabled]="!song.id"
                 [class.is-current]="player.currentSong()?.id === song.id"
                 [attr.aria-label]="song.id ? 'Play ' + song.name + (song.artistName ? ' by ' + song.artistName : '') : song.name + ' — playback unavailable'"
                 (click)="player.play(song, songsPage?.items ?? [])">
@@ -113,7 +114,7 @@ import { getAppConfig } from '../../core/config/app-config';
                 </span>
               </button>
               <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [disabled]="!song.id" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
-              <button class="play-button" type="button" [disabled]="!song.id || player.loading()" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song, songsPage?.items ?? [])" [attr.aria-label]="'Play ' + song.name">
+              <button class="play-button" type="button" [disabled]="!song.id" [attr.aria-busy]="player.loading() && player.currentSong()?.id === song.id" (click)="player.play(song, songsPage?.items ?? [])" [attr.aria-label]="'Play ' + song.name">
                 @if (player.loading() && player.currentSong()?.id === song.id) { <span class="play-button-loading-spinner" aria-hidden="true"></span> }
                 @else { <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg> }
               </button>
@@ -123,7 +124,7 @@ import { getAppConfig } from '../../core/config/app-config';
         @if (songsPage?.totalPages !== 1) {
           <div class="pagination">
             <button type="button" class="button button-quiet" (click)="changeSongPage(-1)" [disabled]="songPage === 0 || songsLoading">← Previous</button>
-            <span>Page {{ songPage + 1 }}{{ songsPage?.totalPages ? ' of ' + songsPage?.totalPages : '' }}</span>
+            <span aria-live="polite" aria-atomic="true">Page {{ songPage + 1 }}{{ songsPage?.totalPages ? ' of ' + songsPage?.totalPages : '' }}</span>
             <button type="button" class="button button-quiet" (click)="changeSongPage(1)" [disabled]="songsLoading || !canGoNext(songsPage)">Next →</button>
           </div>
         }
@@ -141,6 +142,9 @@ export class DiscoverPageComponent implements OnInit {
   readonly library = inject(LibraryService);
   private readonly config = getAppConfig();
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   readonly placeholders = [0, 1, 2, 3];
   readonly textLanguage = textLanguage;
@@ -150,6 +154,8 @@ export class DiscoverPageComponent implements OnInit {
   private readonly artistNames = new Map<string, string>();
   private artistRequestGeneration = 0;
   private songRequestGeneration = 0;
+  private lastArtistRouteKey: string | null = null;
+  private lastSongRouteKey: string | null = null;
   artistPage = 0;
   songPage = 0;
   artistSearch = '';
@@ -164,8 +170,23 @@ export class DiscoverPageComponent implements OnInit {
       this.songsLoading = false;
       return;
     }
-    void this.loadArtists();
-    void this.loadSongs();
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const artistPage = Number(params.get('artistPage') ?? 0);
+      const songPage = Number(params.get('songPage') ?? 0);
+      this.artistPage = Number.isInteger(artistPage) && artistPage >= 0 ? artistPage : 0;
+      this.songPage = Number.isInteger(songPage) && songPage >= 0 ? songPage : 0;
+      this.artistSearch = params.get('artist') ?? '';
+      const artistRouteKey = `${this.artistPage}|${this.artistSearch.trim()}`;
+      const songRouteKey = String(this.songPage);
+      if (artistRouteKey !== this.lastArtistRouteKey) {
+        this.lastArtistRouteKey = artistRouteKey;
+        void this.loadArtists();
+      }
+      if (songRouteKey !== this.lastSongRouteKey) {
+        this.lastSongRouteKey = songRouteKey;
+        void this.loadSongs();
+      }
+    });
   }
 
   async loadArtists(): Promise<void> {
@@ -215,18 +236,40 @@ export class DiscoverPageComponent implements OnInit {
   }
 
   searchArtists(): void {
-    this.artistPage = 0;
-    void this.loadArtists();
+    const term = this.artistSearch.trim();
+    if (term === (this.route.snapshot.queryParamMap.get('artist') ?? '')
+      && this.artistPage === 0) {
+      void this.loadArtists();
+      return;
+    }
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { artist: term || null, artistPage: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
   }
 
   changeArtistPage(delta: number): void {
-    this.artistPage = Math.max(0, this.artistPage + delta);
-    void this.loadArtists();
+    const nextPage = Math.max(0, this.artistPage + delta);
+    if (nextPage === this.artistPage) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { artistPage: nextPage || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
   }
 
   changeSongPage(delta: number): void {
-    this.songPage = Math.max(0, this.songPage + delta);
-    void this.loadSongs();
+    const nextPage = Math.max(0, this.songPage + delta);
+    if (nextPage === this.songPage) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { songPage: nextPage || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
   }
 
   canGoNext(page: MediaPage | null): boolean {

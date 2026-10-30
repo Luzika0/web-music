@@ -1,5 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, MediaPage, MusicApiService } from '../../core/services/music-api.service';
@@ -21,7 +22,7 @@ import { textLanguage } from '../../shared/utils/text-language';
         <label class="sr-only" for="artist-directory-search">Search artists</label>
         <span class="catalog-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></span>
         <input id="artist-directory-search" name="artistSearch" type="search" [(ngModel)]="searchText" placeholder="Search artist names" autocomplete="off" />
-        <button class="button button-light" type="submit" [disabled]="loading" [attr.aria-busy]="loading">
+        <button class="button button-light" type="submit" [attr.aria-busy]="loading">
           @if (loading) { <span class="button-loading-spinner" aria-hidden="true"></span> }
           <span>{{ loading ? 'Searching…' : 'Search' }}</span>
         </button>
@@ -29,7 +30,7 @@ import { textLanguage } from '../../shared/utils/text-language';
       @if (error) {
         <div class="inline-alert error-alert" role="alert">{{ error }} <button type="button" class="text-button" (click)="load()">Try again</button></div>
       } @else if (loading && !page) {
-        <div class="artist-grid" aria-label="Loading artists">
+        <div class="artist-grid" role="status" aria-label="Loading artists">
           @for (placeholder of placeholders; track placeholder) { <div class="artist-card"><span class="skeleton artist-skeleton"></span><span class="skeleton line-skeleton"></span></div> }
         </div>
       } @else if (page?.items?.length) {
@@ -44,7 +45,7 @@ import { textLanguage } from '../../shared/utils/text-language';
         @if (page?.totalPages !== 1) {
           <div class="pagination">
             <button type="button" class="button button-quiet" (click)="changePage(-1)" [disabled]="pageNumber === 0 || loading">← Previous</button>
-            <span>Page {{ pageNumber + 1 }}{{ page?.totalPages ? ' of ' + page?.totalPages : '' }}</span>
+            <span aria-live="polite" aria-atomic="true">Page {{ pageNumber + 1 }}{{ page?.totalPages ? ' of ' + page?.totalPages : '' }}</span>
             <button type="button" class="button button-quiet" (click)="changePage(1)" [disabled]="loading || !canGoNext()">Next →</button>
           </div>
         }
@@ -61,6 +62,8 @@ export class ArtistsPageComponent implements OnInit {
   private requestGeneration = 0;
   private readonly platformId = inject(PLATFORM_ID);
   private readonly pageSize = getAppConfig().pageSize;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   readonly textLanguage = textLanguage;
   readonly placeholders = [0, 1, 2, 3, 4, 5];
   page: MediaPage | null = null;
@@ -74,9 +77,10 @@ export class ArtistsPageComponent implements OnInit {
       this.loading = false;
       return;
     }
-    this.route.queryParamMap.subscribe((params) => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.searchText = params.get('search') ?? '';
-      this.pageNumber = 0;
+      const requestedPage = Number(params.get('page') ?? 0);
+      this.pageNumber = Number.isInteger(requestedPage) && requestedPage >= 0 ? requestedPage : 0;
       void this.load();
     });
   }
@@ -94,7 +98,10 @@ export class ArtistsPageComponent implements OnInit {
     } catch (error) {
       if (generation === this.requestGeneration) this.error = this.api.toUserMessage(error);
     } finally {
-      if (generation === this.requestGeneration) this.loading = false;
+      if (generation === this.requestGeneration) {
+        this.loading = false;
+        this.changeDetector.markForCheck();
+      }
     }
   }
 
@@ -102,20 +109,38 @@ export class ArtistsPageComponent implements OnInit {
     this.pageNumber = 0;
     const term = this.searchText.trim();
     if (term === (this.route.snapshot.queryParamMap.get('search') ?? '')) {
-      void this.load();
+      if (this.route.snapshot.queryParamMap.has('page')) {
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { page: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: false,
+        });
+      } else {
+        void this.load();
+      }
       return;
     }
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: this.searchText.trim() ? { search: this.searchText.trim() } : { search: null },
+      queryParams: {
+        search: term || null,
+        page: null,
+      },
       queryParamsHandling: 'merge',
       replaceUrl: false,
     });
   }
 
   changePage(delta: number): void {
-    this.pageNumber = Math.max(0, this.pageNumber + delta);
-    void this.load();
+    const nextPage = Math.max(0, this.pageNumber + delta);
+    if (nextPage === this.pageNumber) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: nextPage || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
   }
 
   canGoNext(): boolean {

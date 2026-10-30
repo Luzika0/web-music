@@ -20,12 +20,12 @@ import { textLanguage } from '../../shared/utils/text-language';
         <div class="song-list liked-song-list">
           @for (song of library.likedSongs(); track song.id) {
             <article class="song-row">
-              <button class="song-cover" type="button" [style.background]="colorFor(song)" [disabled]="player.loading()" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, library.likedSongs())">
+              <button class="song-cover" type="button" [style.background]="colorFor(song)" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, library.likedSongs())">
                 <span aria-hidden="true">♫</span><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="play-overlay" aria-hidden="true">▶</span>
               </button>
               <div class="song-details" [attr.lang]="textLanguage(song.name, song.artistName)"><h2>{{ song.name }}</h2><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
               <button class="like-button liked" type="button" aria-label="Remove from Liked Songs" (click)="library.removeLikedSong(song.id)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
-              <button class="play-button" type="button" [disabled]="player.loading()" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, library.likedSongs())"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
+              <button class="play-button" type="button" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, library.likedSongs())"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg></button>
             </article>
           }
         </div>

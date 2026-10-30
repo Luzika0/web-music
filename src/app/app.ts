@@ -174,7 +174,6 @@ export class App implements AfterViewInit, OnDestroy {
       }
       const Hls = HlsModule.default;
       if (Hls.isSupported()) {
-        let retriedUnauthorized = false;
         const instance = new Hls({
           xhrSetup: (xhr) => {
             for (const [name, value] of Object.entries(this.api.playbackHeaders(playbackToken))) {
@@ -193,17 +192,10 @@ export class App implements AfterViewInit, OnDestroy {
         });
         instance.on(Hls.Events.ERROR, (_event, data) => {
           if (generation === this.playbackGeneration && data.fatal) {
-            if (data.response?.code === 401 && !retriedUnauthorized) {
-              retriedUnauthorized = true;
-              void this.api.refreshPlaybackAuthorization()
-                .then(() => {
-                  if (generation === this.playbackGeneration) {
-                    instance.startLoad();
-                  }
-                })
-                .catch((error: unknown) => {
-                  this.player.setError(this.api.toUserMessage(error));
-                });
+            if (data.response?.code === 401) {
+              // A 401 may mean the short-lived playback token expired, not just the access JWT.
+              // Request one fresh playback session so both authorization tokens are renewed together.
+              void this.player.renewCurrentPlayback();
             } else {
               this.player.setError('The stream could not be loaded. Check your connection and try the track again.');
             }
