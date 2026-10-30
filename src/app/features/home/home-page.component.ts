@@ -58,7 +58,7 @@ import { textLanguage } from '../../shared/utils/text-language';
                 <span aria-hidden="true">♫</span><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="home-cover-play" aria-hidden="true">▶</span>
               </button>
               <div class="home-song-meta" [attr.lang]="textLanguage(song.name, song.artistName)"><strong>{{ song.name }}</strong><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
-              <button class="like-button" type="button" [class.liked]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" [attr.aria-pressed]="library.isLiked(song.id)" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
+              <button class="like-button" type="button" [disabled]="!song.id" [class.liked]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" [attr.aria-pressed]="library.isLiked(song.id)" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
             </article>
           }
         </div>
@@ -72,6 +72,7 @@ import { textLanguage } from '../../shared/utils/text-language';
         <div><p class="eyebrow">MADE BY PEOPLE, FELT BY EVERYONE</p><h2 id="home-artists-heading">Artists to know</h2></div>
         <a class="section-link" routerLink="/artists">All artists <span aria-hidden="true">→</span></a>
       </div>
+      @if (artistsError) { <div class="inline-alert info-alert" role="status">{{ artistsError }}</div> }
       <div class="home-artist-grid">
         @for (artist of artists; track artist.id || $index) {
           <a class="home-artist-card" routerLink="/artists" [queryParams]="{ search: artist.name }">
@@ -97,6 +98,7 @@ export class HomePageComponent implements OnInit {
   artists: MediaItem[] = [];
   loading = true;
   error = '';
+  artistsError = '';
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) void this.load();
@@ -129,9 +131,8 @@ export class HomePageComponent implements OnInit {
     ]);
     if (songs.status === 'fulfilled') this.songs = songs.value.items;
     if (artists.status === 'fulfilled') this.artists = artists.value.items;
-    if (songs.status === 'rejected' && artists.status === 'rejected') {
-      this.error = this.api.toUserMessage(songs.reason);
-    }
+    this.error = songs.status === 'rejected' ? this.api.toUserMessage(songs.reason) : '';
+    this.artistsError = artists.status === 'rejected' ? this.api.toUserMessage(artists.reason) : '';
     this.loading = false;
   }
 }
