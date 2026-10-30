@@ -1,6 +1,16 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { MediaItem, MusicApiService } from './music-api.service';
 
+export interface PlaylistTrack {
+  songId: string;
+  artistId: string;
+  songName: string;
+  artistName: string;
+  songImage: string;
+  songType: string;
+  position: number;
+}
+
 export interface UserPlaylist {
   playlistId: number;
   name: string;
@@ -8,6 +18,7 @@ export interface UserPlaylist {
   coverImage: string | null;
   createdAt: string | null;
   songIds: string[];
+  songs: PlaylistTrack[];
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -24,13 +35,29 @@ function playlistFrom(value: unknown): UserPlaylist | null {
   const playlistId = Number(item['playlistId']);
   if (!Number.isSafeInteger(playlistId) || playlistId <= 0 || typeof item['name'] !== 'string') return null;
   const songIds = Array.isArray(item['songIds']) ? item['songIds'].map(String) : [];
+  const songs: PlaylistTrack[] = Array.isArray(item['songs']) ? item['songs'].flatMap(value => {
+    const track = record(value);
+    const songId = typeof track['songId'] === 'string' ? track['songId'] : '';
+    const songName = typeof track['songName'] === 'string' ? track['songName'] : '';
+    if (!songId || !songName) return [];
+    return [{
+      songId,
+      artistId: String(track['artistId'] ?? ''),
+      songName,
+      artistName: typeof track['artistName'] === 'string' ? track['artistName'] : '',
+      songImage: typeof track['songImage'] === 'string' ? track['songImage'] : '',
+      songType: typeof track['songType'] === 'string' ? track['songType'] : '',
+      position: Number.isFinite(Number(track['position'])) ? Number(track['position']) : 0,
+    }];
+  }) : [];
   return {
     playlistId,
     name: item['name'],
     description: typeof item['description'] === 'string' ? item['description'] : '',
     coverImage: typeof item['coverImage'] === 'string' ? item['coverImage'] : null,
     createdAt: typeof item['createdAt'] === 'string' ? item['createdAt'] : null,
-    songIds,
+    songIds: songs.length ? songs.map(track => track.songId) : songIds,
+    songs,
   };
 }
 
