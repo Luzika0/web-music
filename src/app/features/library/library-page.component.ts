@@ -64,10 +64,14 @@ import { LibraryService } from '../../core/services/library.service';
           <section class="playlist-detail">
             <div class="section-heading"><div><p class="eyebrow">PLAYLIST CONTENTS</p><h2>{{ selectedPlaylist()!.name }}</h2></div><button class="button button-quiet" type="button" (click)="selectedId.set(null)">Close</button></div>
             @if (selectedPlaylist()!.songIds.length) {
-              @for (songId of selectedPlaylist()!.songIds; track songId) {
+              @for (songId of selectedPlaylist()!.songIds; track songId; let i = $index) {
                 <div class="song-row">
                   <span>{{ songName(songId) }}</span>
-                  <button class="button button-quiet" type="button" (click)="removeSong(selectedPlaylist()!.id, songId)">Remove</button>
+                  <div class="playlist-card-actions">
+                    <button class="button button-quiet" type="button" [disabled]="i === 0" (click)="moveSong(selectedPlaylist()!.id, i, -1)" aria-label="Move song up">↑</button>
+                    <button class="button button-quiet" type="button" [disabled]="i === selectedPlaylist()!.songIds.length - 1" (click)="moveSong(selectedPlaylist()!.id, i, 1)" aria-label="Move song down">↓</button>
+                    <button class="button button-quiet" type="button" (click)="removeSong(selectedPlaylist()!.id, songId)">Remove</button>
+                  </div>
                 </div>
               }
             } @else { <p>This playlist is empty. Add songs below.</p> }
@@ -154,6 +158,17 @@ export class LibraryPageComponent {
   async removeSong(playlistId: string, songId: string): Promise<void> {
     try { await this.library.removeSongFromPlaylist(playlistId, songId); }
     catch (error) { this.library.error.set(error instanceof Error ? error.message : 'Could not remove song.'); }
+  }
+
+  async moveSong(playlistId: string, index: number, delta: number): Promise<void> {
+    const playlist = this.selectedPlaylist();
+    if (!playlist) return;
+    const next = [...playlist.songIds];
+    const target = index + delta;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    try { await this.library.reorderPlaylist(playlistId, next); }
+    catch (error) { this.library.error.set(error instanceof Error ? error.message : 'Could not reorder songs.'); }
   }
 
   songName(id: string): string {
