@@ -82,6 +82,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
             </button>
           </form>
           <p class="auth-switch">Already verified? <a routerLink="/login">Log in</a></p>
+          <p class="auth-switch">Wrong email address? <a routerLink="/register">Change your details</a></p>
         } @else if (mode === 'login') {
           <form class="form-stack" (ngSubmit)="submit()" #authForm="ngForm">
             <label for="login-identity">Email or username</label>
@@ -143,6 +144,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
             </button>
           </form>
           <p class="auth-switch"><a routerLink="/login">Back to log in</a></p>
+          <p class="auth-switch">Need another code? <a routerLink="/forgot-password">Request a new one</a></p>
         }
       </div>
     </section>
