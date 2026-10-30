@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LibraryService } from '../../core/services/library.service';
+import { MusicApiService } from '../../core/services/music-api.service';
 
 @Component({
   selector: 'app-library-page',
@@ -18,6 +19,7 @@ import { LibraryService } from '../../core/services/library.service';
         <span class="shortcut-arrow" aria-hidden="true">↗</span>
       </a>
       @if (library.error()) { <div class="inline-alert error-alert" role="alert">{{ library.error() }}</div> }
+      @if (api.user()) {
       <div class="section-heading library-section-heading">
         <div><p class="eyebrow">YOUR PLAYLISTS</p><h2>Made by you</h2></div>
         <button class="button button-light" type="button" (click)="showCreate.update(value => !value)">
@@ -94,11 +96,15 @@ import { LibraryService } from '../../core/services/library.service';
           <button class="button button-light" type="button" (click)="showCreate.set(true)">Create your first playlist</button>
         </div>
       }
+      } @else {
+        <div class="empty-state"><span class="empty-icon" aria-hidden="true">♫</span><h2>Sign in to access your library</h2><p>Your playlists and liked songs are saved to your account and sync across devices.</p><a class="button button-light" routerLink="/login">Sign in</a></div>
+      }
     </section>
   `,
 })
 export class LibraryPageComponent {
   readonly library = inject(LibraryService);
+  readonly api = inject(MusicApiService);
   readonly showCreate = signal(false);
   readonly name = signal('');
   readonly description = signal('');
