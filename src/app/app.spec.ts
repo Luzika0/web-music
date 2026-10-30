@@ -384,6 +384,31 @@ describe('MusicApiService', () => {
     expect(api.user()?.accessToken).toBe('access');
   });
 
+  it('refreshes an expired access token using the Auth Service newAccessToken response field', async () => {
+    const expiredAccess = `header.${btoa(JSON.stringify({ exp: 1 }))}.signature`;
+    const login = api.login('listener', 'secret');
+    http.expectOne('/api/auth/log-in').flush({
+      data: { token: { acessToken: expiredAccess, userId: 123, refreshToken: 'refresh-valid' } },
+    });
+    await login;
+
+    const guardedRequest = api.songs(0, 8);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const refresh = http.expectOne((request) =>
+      request.url === '/api/auth/refresh-token'
+      && request.params.get('refreshToken') === 'refresh-valid');
+    expect(refresh.request.method).toBe('POST');
+    refresh.flush({ statusCode: 200, message: 'SUCCESS', data: { newAccessToken: 'fresh-access-token' } });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const songs = http.expectOne('/api/auth/media/list-song?page=0&size=8&searchText=');
+    expect(songs.request.headers.get('Authorization')).toBe('Bearer fresh-access-token');
+    expect(api.user()?.accessToken).toBe('fresh-access-token');
+    expect(JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY) ?? '{}').accessToken).toBe('fresh-access-token');
+    songs.flush({ data: { content: [], totalPage: 0 } });
+    await expect(guardedRequest).resolves.toMatchObject({ items: [], page: 0 });
+  });
+
   it('sends bearer and user identity headers when loading the protected song catalogue', async () => {
     const login = api.login('listener', 'secret');
     const loginRequest = http.expectOne('/api/auth/log-in');
