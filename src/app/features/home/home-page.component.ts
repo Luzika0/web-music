@@ -29,7 +29,7 @@ import { textLanguage } from '../../shared/utils/text-language';
     <section class="section-block home-shortcuts" aria-label="Your shortcuts">
       <a class="shortcut-card liked-shortcut" routerLink="/liked">
         <span class="shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></span>
-        <span><strong>Liked Songs</strong><small>{{ library.likedSongs().length }} saved on this device</small></span>
+        <span><strong>Liked Songs</strong><small>{{ library.likedSongs().length }} saved to your account</small></span>
         <span class="shortcut-arrow" aria-hidden="true">↗</span>
       </a>
       <a class="shortcut-card" routerLink="/library">
