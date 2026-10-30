@@ -99,6 +99,11 @@ export class LibraryService {
     await this.reload();
   }
 
+  async reorderPlaylist(playlistId: string, songIds: string[]): Promise<void> {
+    await this.api.reorderPlaylist(playlistId, songIds);
+    this.playlists.update((items) => items.map((item) => item.id === playlistId ? { ...item, songIds } : item));
+  }
+
   async removeSongFromPlaylist(playlistId: string, songId: string): Promise<void> {
     await this.api.removeSongFromPlaylist(playlistId, songId);
     await this.reload();
