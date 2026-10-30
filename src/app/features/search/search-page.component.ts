@@ -96,7 +96,7 @@ export class SearchPageComponent implements OnInit {
   partialError = '';
   private searchGeneration = 0;
 
-  ngOnInit(): void {\n    if (this.api.user()) void this.library.loadFavorites().catch(() => undefined);
+  ngOnInit(): void {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.query = params.get('q') ?? '';
       const term = this.query.trim();
