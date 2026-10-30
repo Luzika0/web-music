@@ -100,6 +100,11 @@ export class ArtistsPageComponent implements OnInit {
 
   search(): void {
     this.pageNumber = 0;
+    const term = this.searchText.trim();
+    if (term === (this.route.snapshot.queryParamMap.get('search') ?? '')) {
+      void this.load();
+      return;
+    }
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: this.searchText.trim() ? { search: this.searchText.trim() } : { search: null },
