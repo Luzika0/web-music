@@ -24,6 +24,7 @@ export class PlaybackService {
   private stopWatching: (() => void) | null = null;
   private pendingPlayback: { song: MediaItem; playlist?: readonly MediaItem[]; navigateToNowPlaying: boolean } | null = null;
   private requestGeneration = 0;
+  private streamRecoveryAttempts = 0;
   private audioElement: HTMLAudioElement | null = null;
 
   constructor(
@@ -58,11 +59,17 @@ export class PlaybackService {
     return palette[index % palette.length];
   }
 
-  async play(song: MediaItem, playlist?: readonly MediaItem[], navigateToNowPlaying: boolean = false): Promise<void> {
+  async play(
+    song: MediaItem,
+    playlist?: readonly MediaItem[],
+    navigateToNowPlaying: boolean = false,
+    authorizationRecovery: boolean = false,
+  ): Promise<void> {
     if (!song.id) {
       this.error.set('This track does not include a song ID, so it cannot be played.');
       return;
     }
+    if (!authorizationRecovery) this.streamRecoveryAttempts = 0;
     // Do not request a protected playback session or mutate the player for signed-out visitors.
     // Keep the selected track in memory so a successful login can resume it automatically.
     if (!this.api.user()) {
@@ -151,6 +158,17 @@ export class PlaybackService {
         this.loading.set(false);
       }
     }
+  }
+
+  async renewCurrentPlayback(): Promise<void> {
+    const song = this.currentSong();
+    if (!song) return;
+    if (this.streamRecoveryAttempts >= 1) {
+      this.error.set('The stream authorization could not be renewed. Start the track again to retry.');
+      return;
+    }
+    this.streamRecoveryAttempts += 1;
+    await this.play(song, this.queue(), false, true);
   }
 
   cancelPendingPlayback(): void {
@@ -301,6 +319,7 @@ export class PlaybackService {
     this.stopWatching?.();
     this.stopWatching = null;
     this.pendingPlayback = null;
+    this.streamRecoveryAttempts = 0;
     this.currentSong.set(null);
     this.queue.set([]);
     this.queueIndex.set(-1);
