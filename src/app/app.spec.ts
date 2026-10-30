@@ -645,6 +645,31 @@ describe('MusicApiService', () => {
     expect(sessionStorage.getItem(SESSION_STORAGE_KEY)).toBeNull();
   });
 
+  it('does not apply an old account refresh to a newly signed-in account', async () => {
+    const expiredAccess = `header.${btoa(JSON.stringify({ exp: 1 }))}.signature`;
+    const firstLogin = api.login('first-user', 'secret');
+    http.expectOne('/api/auth/log-in').flush({
+      data: { token: { acessToken: expiredAccess, userId: 'user-1', refreshToken: 'refresh-1' } },
+    });
+    await firstLogin;
+
+    const pendingRequest = api.playbackStatus('song-1', 'playback-token');
+    const refresh = http.expectOne((request) =>
+      request.url === '/api/auth/refresh-token' && request.params.get('refreshToken') === 'refresh-1');
+
+    const secondAccess = validAccessToken();
+    const secondLogin = api.login('second-user', 'secret');
+    http.expectOne('/api/auth/log-in').flush({
+      data: { token: { acessToken: secondAccess, userId: 'user-2', refreshToken: 'refresh-2' } },
+    });
+    await secondLogin;
+
+    refresh.flush({ data: { newAcessToken: 'old-account-access' } });
+    await expect(pendingRequest).rejects.toThrow('account changed during token refresh');
+    expect(api.user()?.id).toBe('user-2');
+    expect(api.user()?.accessToken).toBe(secondAccess);
+  });
+
   it('enables admin from data.token.permission and sends authenticated admin operations', async () => {
     const login = api.login('authorized-listener', 'secret');
     http.expectOne('/api/auth/log-in').flush({
