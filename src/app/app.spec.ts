@@ -1065,6 +1065,38 @@ describe('PlaybackService authentication before playback', () => {
     expect(playback.queue()).toEqual([]);
   });
 
+  it('does not resume a guest track after the sign-in request is cancelled', async () => {
+    let signedIn = false;
+    const api = {
+      user: vi.fn(() => signedIn ? ({ id: 'user-1' }) : null),
+      playbackSession: vi.fn(),
+      playbackStatus: vi.fn(),
+      watchPlaybackEvents: vi.fn(() => () => {}),
+      absoluteUrl: vi.fn((path: string) => path),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    const router = { url: '/discover', navigate: vi.fn(async () => true) };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: router },
+        { provide: MusicApiService, useValue: api },
+      ],
+    });
+    const playback = TestBed.inject(PlaybackService);
+    const song: MediaItem = {
+      id: 'song-cancelled', artistId: 'artist-1', name: 'Cancelled track',
+      artistName: 'Artist', imageKey: '', kind: 'song',
+    };
+
+    await playback.play(song);
+    playback.cancelPendingPlayback();
+    signedIn = true;
+    await playback.resumePendingPlayback();
+
+    expect(api.playbackSession).not.toHaveBeenCalled();
+    expect(playback.currentSong()).toBeNull();
+  });
+
   it('resumes a pending track only after a user has signed in', async () => {
     let signedIn = false;
     const api = {
