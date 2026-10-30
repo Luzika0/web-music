@@ -373,7 +373,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.songsLoading = true;
     this.songLookupError = '';
     try {
-      const result = await this.api.songs(page, 10, searchText);
+      const result = await this.api.adminSongs(page, 10, searchText);
       if (this.destroyed || generation !== this.songRequestGeneration) return;
       this.songOptions = result.items.filter(song => !!song.id);
       this.songPage = result.page;
