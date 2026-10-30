@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { App } from './app';
@@ -159,6 +159,70 @@ describe('AuthPageComponent', () => {
     });
     expect(fixture.componentInstance.password).toBe('');
     expect(fixture.componentInstance.otp).toBe('');
+    fixture.destroy();
+  });
+
+  it('preserves a safe return destination through registration and verification', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AuthPageComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              url: [{ path: 'register' }],
+              queryParamMap: convertToParamMap({
+                next: '/discover?artistPage=2',
+                signInToPlay: '1',
+                email: 'listener@example.com',
+              }),
+            },
+          },
+        },
+        { provide: MusicApiService, useValue: {} },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AuthPageComponent);
+    const component = fixture.componentInstance;
+    expect(component.returnQueryParams).toEqual({
+      next: '/discover?artistPage=2',
+      signInToPlay: '1',
+    });
+    expect(component.verifyQueryParams).toEqual({
+      next: '/discover?artistPage=2',
+      signInToPlay: '1',
+      email: 'listener@example.com',
+    });
+    expect(component.verifiedLoginQueryParams).toEqual({
+      next: '/discover?artistPage=2',
+      signInToPlay: '1',
+      verified: '1',
+    });
+    fixture.destroy();
+  });
+
+  it('rejects an external login return destination', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AuthPageComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              url: [{ path: 'login' }],
+              queryParamMap: convertToParamMap({ next: '//attacker.example/path' }),
+            },
+          },
+        },
+        { provide: MusicApiService, useValue: {} },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AuthPageComponent);
+    expect(fixture.componentInstance.safeNext).toBeNull();
     fixture.destroy();
   });
 
@@ -1051,6 +1115,9 @@ describe('PlaybackService queue', () => {
     expect(api.playbackSession).toHaveBeenCalledTimes(3);
 
     playback.stop();
+    expect(playback.currentSong()).toBeNull();
+    expect(playback.queue()).toEqual([]);
+    expect(playback.queueIndex()).toBe(-1);
   });
 });
 
