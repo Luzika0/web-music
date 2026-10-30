@@ -7,12 +7,8 @@ export async function requireAuthenticatedSession(api: MusicApiService, router: 
     return router.createUrlTree(['/login'], { queryParams: { next } });
   }
 
-  try {
-    await api.refreshPlaybackAuthorization();
-    return true;
-  } catch {
-    return router.createUrlTree(['/login'], { queryParams: { reason: 'session-expired' } });
-  }
+  const ready = await api.ensureSessionReady();
+  return ready ? true : router.createUrlTree(['/login'], { queryParams: { next } });
 }
 
 export function authenticatedGuard(_route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {

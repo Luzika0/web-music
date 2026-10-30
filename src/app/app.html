@@ -119,6 +119,7 @@
           <svg class="player-open-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9" /></svg>
         </a>
         <button class="player-like-btn" type="button"
+          [disabled]="!song.id"
           [class.liked]="library.isLiked(song.id)"
           [attr.aria-pressed]="library.isLiked(song.id)"
           [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Save to Liked Songs'"
