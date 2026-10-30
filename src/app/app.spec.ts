@@ -1190,6 +1190,52 @@ describe('PlaybackService queue', () => {
   });
 });
 
+describe('PlaybackService HLS authorization recovery', () => {
+  it('renews one expired playback session and stops retrying after a second unauthorized stream', async () => {
+    let sessionNumber = 0;
+    const api = {
+      user: vi.fn(() => ({ id: 'user-1' })),
+      playbackSession: vi.fn(async (songId: string) => {
+        sessionNumber += 1;
+        return {
+          token: `playback-token-${sessionNumber}`,
+          sessionId: `session-${sessionNumber}`,
+          expiresAt: '2099-01-01T00:00:00Z',
+          songId,
+        };
+      }),
+      playbackStatus: vi.fn(async () => true),
+      watchPlaybackEvents: vi.fn(() => () => {}),
+      absoluteUrl: vi.fn((path: string) => path),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: { navigate: vi.fn(async () => true) } },
+        { provide: MusicApiService, useValue: api },
+      ],
+    });
+    const playback = TestBed.inject(PlaybackService);
+    const song: MediaItem = {
+      id: 'song-expiring', artistId: 'artist-1', name: 'Expiring stream',
+      artistName: 'Artist', imageKey: '', kind: 'song',
+    };
+
+    await playback.play(song);
+    expect(playback.token()).toBe('playback-token-1');
+
+    await playback.renewCurrentPlayback();
+    expect(api.playbackSession).toHaveBeenCalledTimes(2);
+    expect(playback.token()).toBe('playback-token-2');
+    expect(playback.currentSong()?.id).toBe(song.id);
+
+    await playback.renewCurrentPlayback();
+    expect(api.playbackSession).toHaveBeenCalledTimes(2);
+    expect(playback.error()).toContain('could not be renewed');
+    playback.stop();
+  });
+});
+
 describe('PlaybackService latest request state', () => {
   it('does not let an older playback request clear the newer request loading state', async () => {
     const makeSession = (songId: string) => ({
