@@ -57,11 +57,13 @@ import { getAppConfig } from '../../core/config/app-config';
         <div class="artist-grid">
           @for (artist of artistsPage?.items; track artist.id || $index) {
             <article class="artist-card">
+              <a class="discover-artist-link" [routerLink]="['/artists']" [queryParams]="{ search: artist.name }" [attr.aria-label]="'Browse ' + artist.name">
               <div class="artist-art" [style.background]="colorFor(artist)" aria-hidden="true">
                 <span>{{ initial(artist.name) }}</span>
                 <app-media-image [imageKey]="artist.imageKey" [alt]="artist.name + ' artist portrait'" />
               </div>
-              <div class="artist-info"><h3>{{ artist.name }}</h3><span>Artist</span></div>
+              <div class="artist-info"><h3>{{ artist.name }}</h3><span>Artist · Explore music →</span></div>
+              </a>
             </article>
           }
         </div>
