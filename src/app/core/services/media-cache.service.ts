@@ -118,6 +118,13 @@ export class MediaCacheService {
     await this.persist(database);
   }
 
+  async invalidateCatalog(): Promise<void> {
+    if (!this.databasePromise) return;
+    const database = await this.database();
+    database.run("DELETE FROM media_pages WHERE cache_key LIKE 'songs:%' OR cache_key LIKE 'artists:%'");
+    await this.persist(database);
+  }
+
   reportUnavailable(): void {
     this.persistent.set(false);
   }
