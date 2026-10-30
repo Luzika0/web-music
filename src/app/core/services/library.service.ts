@@ -9,6 +9,7 @@ export class LibraryService {
 
   readonly likedSongs = signal<MediaItem[]>([]);
   readonly playlists = signal<PlaylistItem[]>([]);
+  readonly songOptions = signal<MediaItem[]>([]);
   readonly loading = signal(false);
   readonly error = signal('');
 
@@ -19,6 +20,7 @@ export class LibraryService {
       if (!user) {
         this.likedSongs.set([]);
         this.playlists.set([]);
+        this.songOptions.set([]);
         return;
       }
       void this.reload();
@@ -36,6 +38,11 @@ export class LibraryService {
       ]);
       this.likedSongs.set(favorites);
       this.playlists.set(playlists);
+      try {
+        this.songOptions.set((await this.api.songs(0, 100)).items);
+      } catch {
+        this.songOptions.set([]);
+      }
     } catch (error) {
       this.error.set(this.api.toUserMessage(error));
     } finally {
