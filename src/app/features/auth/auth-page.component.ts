@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { MusicApiService } from '../../core/services/music-api.service';
+import { PlaybackService } from '../../core/services/playback.service';
 
 type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-password';
 
@@ -144,7 +145,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
             </button>
           </form>
           <p class="auth-switch"><a routerLink="/login">Back to log in</a></p>
-          <p class="auth-switch">Need another code? <a routerLink="/forgot-password" [queryParams]="{ email: email }">Request a new one</a></p>
+          <p class="auth-switch">Need another code? <a routerLink="/forgot-password">Request a new one</a></p>
         }
       </div>
     </section>
@@ -217,6 +218,8 @@ export class AuthPageComponent implements OnInit {
     }
     if (this.mode === 'login' && this.route.snapshot.queryParamMap.get('passwordReset') === '1') {
       this.success = 'Your password has been reset successfully. Sign in with your new password.';
+    } else if (this.mode === 'login' && this.route.snapshot.queryParamMap.get('signInToPlay') === '1') {
+      this.success = 'Sign in or create an account to start playing this track. We will take you back to your music afterward.';
     }
     if (this.route.snapshot.queryParamMap.get('reason') === 'session-expired') {
       this.error = 'Your session expired. Please sign in again.';
@@ -256,6 +259,7 @@ export class AuthPageComponent implements OnInit {
           const safeNext = requested?.startsWith('/') && !requested.startsWith('//') ? requested : null;
           const destination = safeNext ?? (this.api.isAdmin() ? '/admin' : '/');
           await this.router.navigateByUrl(destination);
+          await this.playback.resumePendingPlayback();
           break;
         }
         case 'forgot-password':
