@@ -883,6 +883,51 @@ describe('PlaybackService queue', () => {
   });
 });
 
+describe('PlaybackService latest request state', () => {
+  it('does not let an older playback request clear the newer request loading state', async () => {
+    const makeSession = (songId: string) => ({
+      token: `token-${songId}`,
+      sessionId: `session-${songId}`,
+      expiresAt: '2099-01-01T00:00:00Z',
+      songId,
+    });
+    let resolveFirst!: (value: ReturnType<typeof makeSession>) => void;
+    let resolveSecond!: (value: ReturnType<typeof makeSession>) => void;
+    const firstSession = new Promise<ReturnType<typeof makeSession>>((resolve) => resolveFirst = resolve);
+    const secondSession = new Promise<ReturnType<typeof makeSession>>((resolve) => resolveSecond = resolve);
+    const api = {
+      playbackSession: vi.fn()
+        .mockImplementationOnce(() => firstSession)
+        .mockImplementationOnce(() => secondSession),
+      playbackStatus: vi.fn(async () => true),
+      watchPlaybackEvents: vi.fn(() => () => {}),
+      absoluteUrl: vi.fn((path: string) => path),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: { navigate: vi.fn(async () => true) } },
+        { provide: MusicApiService, useValue: api },
+      ],
+    });
+    const playback = TestBed.inject(PlaybackService);
+    const first = { id: 'song-1', artistId: 'artist-1', name: 'First', artistName: 'Artist', imageKey: '', kind: 'song' as const };
+    const second = { id: 'song-2', artistId: 'artist-2', name: 'Second', artistName: 'Artist', imageKey: '', kind: 'song' as const };
+
+    const firstRequest = playback.play(first);
+    const secondRequest = playback.play(second);
+    resolveFirst(makeSession(first.id));
+    await firstRequest;
+    expect(playback.currentSong()?.id).toBe(second.id);
+    expect(playback.loading()).toBe(true);
+
+    resolveSecond(makeSession(second.id));
+    await secondRequest;
+    expect(playback.loading()).toBe(false);
+    expect(playback.currentSong()?.id).toBe(second.id);
+  });
+});
+
 describe('textLanguage', () => {
   it('uses Khmer language metadata only when Khmer script is present', () => {
     expect(textLanguage('សួស្តី')).toBe('km');
