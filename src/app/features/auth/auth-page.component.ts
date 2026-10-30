@@ -215,6 +215,9 @@ export class AuthPageComponent implements OnInit {
     if (this.mode === 'login' && this.route.snapshot.queryParamMap.get('verified') === '1') {
       this.success = 'Your email is verified. You can now log in.';
     }
+    if (this.mode === 'login' && this.route.snapshot.queryParamMap.get('passwordReset') === '1') {
+      this.success = 'Your password has been reset successfully. Sign in with your new password.';
+    }
     if (this.route.snapshot.queryParamMap.get('reason') === 'session-expired') {
       this.error = 'Your session expired. Please sign in again.';
     }
@@ -261,8 +264,12 @@ export class AuthPageComponent implements OnInit {
           break;
         case 'reset-password':
           await this.api.resetPassword(this.email.trim(), this.otp.trim(), this.password);
-          this.success = 'Your password has been updated. You can log in now.';
           this.password = '';
+          this.otp = '';
+          await this.router.navigate(['/login'], {
+            queryParams: { passwordReset: '1' },
+            replaceUrl: true,
+          });
           break;
       }
     } catch (error) {
