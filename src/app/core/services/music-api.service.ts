@@ -337,24 +337,61 @@ export class MusicApiService {
 
 
   async libraryFavorites(): Promise<MediaItem[]> {
-    const response = await this.request<unknown>('GET', '/api/auth/library/favorites', { authenticated: true });
-    return normalizeMedia(response, 'song', 0).items;
+    const userId = this.session?.id;
+    if (!userId) throw new Error('Sign in to view your liked songs.');
+    const key = 'library:favorites';
+    const cached = await this.readCachedPageEntry<MediaItem[]>(userId, key);
+    if (cached && Date.now() - cached.cachedAt < 2 * 60 * 1000) return cached.value;
+    try {
+      const response = await this.request<unknown>('GET', '/api/auth/library/favorites', { authenticated: true });
+      const items = normalizeMedia(response, 'song', 0).items;
+      await this.cachePage(userId, key, items);
+      return items;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 0 && cached) return cached.value;
+      throw error;
+    }
   }
 
   async addLibraryFavorite(songId: string): Promise<void> {
     await this.request('POST', `/api/auth/library/favorites/${encodeURIComponent(songId)}`, { authenticated: true });
+    await this.invalidateLibraryPage('library:favorites');
   }
 
   async removeLibraryFavorite(songId: string): Promise<void> {
     await this.request('DELETE', `/api/auth/library/favorites/${encodeURIComponent(songId)}`, { authenticated: true });
+    await this.invalidateLibraryPage('library:favorites');
   }
 
   async libraryPlaylists(): Promise<unknown> {
-    return this.request<unknown>('GET', '/api/auth/library/playlists', { authenticated: true });
+    const userId = this.session?.id;
+    if (!userId) throw new Error('Sign in to view your playlists.');
+    const key = 'library:playlists';
+    const cached = await this.readCachedPageEntry<unknown>(userId, key);
+    if (cached && Date.now() - cached.cachedAt < 2 * 60 * 1000) return cached.value;
+    try {
+      const response = await this.request<unknown>('GET', '/api/auth/library/playlists', { authenticated: true });
+      await this.cachePage(userId, key, response);
+      return response;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 0 && cached) return cached.value;
+      throw error;
+    }
+  }
+
+  private async invalidateLibraryPage(key: string): Promise<void> {
+    if (!this.session) return;
+    try {
+      await this.mediaCache.deletePage(this.session.id, key);
+    } catch {
+      this.mediaCache.reportUnavailable();
+    }
   }
 
   async createLibraryPlaylist(payload: { name: string; description: string }): Promise<unknown> {
-    return this.request<unknown>('POST', '/api/auth/library/playlists', { body: payload, authenticated: true });
+    const result = await this.request<unknown>('POST', '/api/auth/library/playlists', { body: payload, authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
+    return result;
   }
 
   async getLibraryPlaylist(playlistId: number): Promise<unknown> {
@@ -362,23 +399,32 @@ export class MusicApiService {
   }
 
   async updateLibraryPlaylist(playlistId: number, payload: { name: string; description: string }): Promise<unknown> {
-    return this.request<unknown>('PUT', `/api/auth/library/playlists/${playlistId}`, { body: payload, authenticated: true });
+    const result = await this.request<unknown>('PUT', `/api/auth/library/playlists/${playlistId}`, { body: payload, authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
+    return result;
   }
 
   async deleteLibraryPlaylist(playlistId: number): Promise<void> {
     await this.request('DELETE', `/api/auth/library/playlists/${playlistId}`, { authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
   }
 
   async addSongToLibraryPlaylist(playlistId: number, songId: string): Promise<unknown> {
-    return this.request<unknown>('POST', `/api/auth/library/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`, { authenticated: true });
+    const result = await this.request<unknown>('POST', `/api/auth/library/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`, { authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
+    return result;
   }
 
   async removeSongFromLibraryPlaylist(playlistId: number, songId: string): Promise<unknown> {
-    return this.request<unknown>('DELETE', `/api/auth/library/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`, { authenticated: true });
+    const result = await this.request<unknown>('DELETE', `/api/auth/library/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`, { authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
+    return result;
   }
 
   async reorderLibraryPlaylist(playlistId: number, songIds: string[]): Promise<unknown> {
-    return this.request<unknown>('PUT', `/api/auth/library/playlists/${playlistId}/songs`, { body: songIds, authenticated: true });
+    const result = await this.request<unknown>('PUT', `/api/auth/library/playlists/${playlistId}/songs`, { body: songIds, authenticated: true });
+    await this.invalidateLibraryPage('library:playlists');
+    return result;
   }
 
   async playbackSession(songId: string): Promise<PlaybackSession> {
