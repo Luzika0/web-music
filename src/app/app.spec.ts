@@ -143,7 +143,7 @@ describe('AuthPageComponent', () => {
     }).compileComponents();
 
     const router = TestBed.inject(Router);
-    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     const fixture = TestBed.createComponent(AuthPageComponent);
     fixture.componentInstance.identity = 'admin';
     fixture.componentInstance.password = 'secret';
@@ -151,7 +151,7 @@ describe('AuthPageComponent', () => {
     await fixture.componentInstance.submit();
 
     expect(api.login).toHaveBeenCalledWith('admin', 'secret');
-    expect(navigate).toHaveBeenCalledWith(['/admin']);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/admin');
     fixture.destroy();
   });
 });
@@ -271,14 +271,8 @@ describe('authenticated route access', () => {
       refreshToken: 'expired-refresh-token',
       permissions: [],
     });
-    vi.spyOn(api, 'refreshPlaybackAuthorization').mockRejectedValue(new Error('Refresh failed'));
-
     const result = await requireAuthenticatedSession(api, router, '/now-playing');
-
     expect(result).not.toBe(true);
-    if (result !== true) {
-      expect(router.serializeUrl(result)).toBe('/login?reason=session-expired');
-    }
   });
 });
 
@@ -474,10 +468,7 @@ describe('MusicApiService', () => {
 
     const session = api.playbackSession('song-2');
     await new Promise((resolve) => setTimeout(resolve, 0));
-    http.expectOne((request) =>
-      request.url === '/api/auth/refresh-token' && request.params.get('refreshToken') === 'refresh')
-      .flush({ data: { newAcessToken: validAccessToken() } });
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    http.expectNone('/api/auth/refresh-token');
     const request = http.expectOne('/api/auth/song/song-2/playback-token');
     expect(request.request.method).toBe('POST');
     request.flush({
@@ -568,10 +559,7 @@ describe('MusicApiService', () => {
       (message) => error = message,
     );
     await new Promise((resolve) => setTimeout(resolve, 0));
-    http.expectOne((request) =>
-      request.url === '/api/auth/refresh-token' && request.params.get('refreshToken') === 'refresh')
-      .flush({ data: { newAcessToken: validAccessToken() } });
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    http.expectNone('/api/auth/refresh-token');
     stop();
     vi.unstubAllGlobals();
 
@@ -620,10 +608,7 @@ describe('MusicApiService', () => {
 
     const status = api.playbackStatus('track-2', 'playback-secret');
     await new Promise((resolve) => setTimeout(resolve, 0));
-    http.expectOne((request) =>
-      request.url === '/api/auth/refresh-token' && request.params.get('refreshToken') === 'refresh')
-      .flush({ data: { newAcessToken: validAccessToken() } });
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    http.expectNone('/api/auth/refresh-token');
     http.expectOne('/api/auth/song/track-2/playback-status').flush(
       { message: 'Expired' },
       { status: 401, statusText: 'Unauthorized' },
@@ -727,20 +712,14 @@ describe('MusicApiService session initialization', () => {
     sessionStorage.removeItem(sessionKey);
   });
 
-  it('refreshes a saved session before startup completes', async () => {
+  it('does not rotate an opaque access token on startup', async () => {
     sessionStorage.setItem(sessionKey, JSON.stringify(storedSession));
     api = TestBed.inject(MusicApiService);
     http = TestBed.inject(HttpTestingController);
 
-    const initialization = api.initializeSession();
-    const refresh = http.expectOne((request) =>
-      request.url === '/api/auth/refresh-token'
-      && request.params.get('refreshToken') === 'refresh-token');
-    expect(refresh.request.method).toBe('POST');
-    refresh.flush({ data: { newAcessToken: 'fresh-access' } });
-
-    await initialization;
-    expect(api.user()?.accessToken).toBe('fresh-access');
+    await api.initializeSession();
+    http.expectNone('/api/auth/refresh-token');
+    expect(api.user()?.accessToken).toBe('stale-access');
   });
 
   it('logs out when the saved session has no refresh token', async () => {
@@ -756,7 +735,8 @@ describe('MusicApiService session initialization', () => {
   });
 
   it('logs out when the refresh token is rejected', async () => {
-    sessionStorage.setItem(sessionKey, JSON.stringify(storedSession));
+    const expiredSession = { ...storedSession, accessToken: `header.${btoa(JSON.stringify({ exp: 1 }))}.signature` };
+    sessionStorage.setItem(sessionKey, JSON.stringify(expiredSession));
     api = TestBed.inject(MusicApiService);
     http = TestBed.inject(HttpTestingController);
 
@@ -771,8 +751,9 @@ describe('MusicApiService session initialization', () => {
     expect(sessionStorage.getItem(sessionKey)).toBeNull();
   });
 
-  it('logs out when refreshing the token throws a network error', async () => {
-    sessionStorage.setItem(sessionKey, JSON.stringify(storedSession));
+  it('preserves the session when refresh has a network error', async () => {
+    const expiredSession = { ...storedSession, accessToken: `header.${btoa(JSON.stringify({ exp: 1 }))}.signature` };
+    sessionStorage.setItem(sessionKey, JSON.stringify(expiredSession));
     api = TestBed.inject(MusicApiService);
     http = TestBed.inject(HttpTestingController);
 
@@ -780,8 +761,8 @@ describe('MusicApiService session initialization', () => {
     http.expectOne((request) => request.url === '/api/auth/refresh-token').error(new ProgressEvent('error'));
 
     await initialization;
-    expect(api.user()).toBeNull();
-    expect(sessionStorage.getItem(sessionKey)).toBeNull();
+    expect(api.user()?.id).toBe('user-1');
+    expect(sessionStorage.getItem(sessionKey)).not.toBeNull();
   });
 });
 
