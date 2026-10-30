@@ -7,7 +7,11 @@ const DATABASE_VERSION = 1;
 const DATABASE_STORE = 'sqlite';
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_IMAGE_CACHE_BYTES = 48 * 1024 * 1024;
-const MAX_CACHED_PAGE_AGE_MS = 30 * 24 * 60 * 60 * 1000;\nexport const PAGE_CACHE_FRESH_MS = 10 * 60 * 1000;\nexport const IMAGE_CACHE_FRESH_MS = 30 * 24 * 60 * 60 * 1000;\n\nexport interface CacheEntry<T> { value: T; cachedAt: number; }
+const MAX_CACHED_PAGE_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+export const PAGE_CACHE_FRESH_MS = 10 * 60 * 1000;
+export const IMAGE_CACHE_FRESH_MS = 30 * 24 * 60 * 60 * 1000;
+
+export interface CacheEntry<T> { value: T; cachedAt: number; }
 
 @Injectable({ providedIn: 'root' })
 export class MediaCacheService {
