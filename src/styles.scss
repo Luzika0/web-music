@@ -4386,3 +4386,20 @@ button, a { touch-action: manipulation; }
 .playlist-track-play:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .library-create-form select { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--background,transparent); color: var(--text); font: inherit; }
 @media (max-width: 700px) { .playlist-track-row { align-items: flex-start; flex-direction: column; } .playlist-order-actions { flex-wrap: wrap; } }
+
+
+/* Live Creator Studio catalog */
+.admin-song-catalog { margin: 22px 0; }
+.admin-song-search { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; margin: 14px 0; }
+.admin-song-search input { min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--background,transparent); color: var(--text); font: inherit; }
+.admin-song-list { display: grid; gap: 8px; }
+.admin-song-row { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface,rgba(255,255,255,.025)); }
+.admin-song-art { display: grid; width: 48px; height: 48px; flex: 0 0 48px; overflow: hidden; place-items: center; border-radius: 8px; background: var(--surface-raised,rgba(255,255,255,.08)); }
+.admin-song-art app-media-image { width: 100%; height: 100%; }
+.admin-song-copy { display: grid; min-width: 0; flex: 1; gap: 3px; }
+.admin-song-copy strong, .admin-song-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-song-copy strong { font-size: 13px; }
+.admin-song-copy small { color: var(--muted); font-size: 10px; }
+.admin-song-copy small.record-id { color: var(--subtle); }
+.admin-song-delete { min-height: 34px; padding: 7px 11px; }
+@media (max-width: 600px) { .admin-song-search { grid-template-columns: 1fr; } .admin-song-row { align-items: flex-start; } .admin-song-delete { align-self: center; } }
