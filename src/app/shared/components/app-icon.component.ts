@@ -83,6 +83,7 @@ const ICONS = {
   volume: LucideVolume,
   volumeLow: LucideVolume1,
   volumeMedium: LucideVolume2,
+  volumeHigh: LucideVolume2,
   mute: LucideVolumeX,
   queue: LucideListMusic,
   close: LucideX,
@@ -126,12 +127,14 @@ export type AppIconName = keyof typeof ICONS;
       [attr.aria-hidden]="decorative ? 'true' : null"
       [attr.role]="decorative ? null : 'img'"
       [attr.aria-label]="decorative ? null : label"
+      [style.width]="cssSize"
+      [style.height]="cssSize"
       focusable="false"
     ></svg>
   `,
   styles: [`
-    :host { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; line-height: 0; vertical-align: middle; }
-    svg { display: block; width: 1em; height: 1em; overflow: visible; }
+     :host { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; line-height: 0; vertical-align: middle; color: inherit; pointer-events: none; }
+    svg { display: block; max-width: 100%; max-height: 100%; overflow: visible; }
     :host(.icon-spin) svg { animation: app-icon-spin 1s linear infinite; }
     @keyframes app-icon-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { :host(.icon-spin) svg { animation: none; } }
@@ -146,5 +149,9 @@ export class AppIconComponent {
 
   get iconData() {
     return ICONS[this.name] ?? LucideMusic2;
+  }
+
+  get cssSize(): string {
+    return typeof this.size === 'number' ? `${this.size}px` : this.size;
   }
 }
