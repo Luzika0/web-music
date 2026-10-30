@@ -155,6 +155,7 @@ export class AuthPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly api = inject(MusicApiService);
+  private readonly playback = inject(PlaybackService);
   private readonly title = inject(Title);
   private readonly changeDetector = inject(ChangeDetectorRef);
   mode: AuthMode = 'login';
