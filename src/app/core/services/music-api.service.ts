@@ -520,7 +520,7 @@ export class MusicApiService {
       const accessToken = pathValue(response, 'data', 'newAccessToken')
         ?? pathValue(response, 'data', 'newAcessToken');
       if (typeof accessToken !== 'string' || !accessToken) {
-        throw new Error('The refresh response is missing data.newAcessToken.');
+        throw new Error('The refresh response is missing data.newAccessToken.');
       }
 
       if (this.sessionGeneration !== generation
