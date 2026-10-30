@@ -54,7 +54,7 @@ import { textLanguage } from '../../shared/utils/text-language';
         <div class="home-song-grid">
           @for (song of songs; track song.id || $index) {
             <article class="home-song-card">
-              <button class="home-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id || player.loading()" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
+              <button class="home-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
                 <span aria-hidden="true">♫</span><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="home-cover-play" aria-hidden="true">▶</span>
               </button>
               <div class="home-song-meta" [attr.lang]="textLanguage(song.name, song.artistName)"><strong>{{ song.name }}</strong><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
