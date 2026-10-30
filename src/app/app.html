@@ -10,22 +10,22 @@
         [attr.aria-expanded]="!sidebarCollapsed" aria-controls="main-nav"
         [attr.aria-label]="sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'"
         [title]="sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16" /><path class="sidebar-toggle-arrow" d="m14 8 4 4-4 4" /></svg>
+        <app-icon name="panelOpen" />
       </button>
     </div>
     <nav class="main-nav" id="main-nav" aria-label="Main navigation">
       <div class="nav-section-title">Menu</div>
       <a routerLink="/" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }" title="Home">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" /></svg><span>Home</span>
+        <app-icon name="home" /><span>Home</span>
       </a>
       <a routerLink="/search" routerLinkActive="active" ariaCurrentWhenActive="page" title="Search">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg><span>Search</span>
+        <app-icon name="search" /><span>Search</span>
       </a>
       <a routerLink="/discover" routerLinkActive="active" ariaCurrentWhenActive="page" title="Discover">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 2 2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" /></svg><span>Discover</span>
+        <app-icon name="discover" /><span>Discover</span>
       </a>
       <a routerLink="/artists" routerLinkActive="active" ariaCurrentWhenActive="page" title="Artists">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 5.2a3.5 3.5 0 0 1 0 6.7M17 14a6 6 0 0 1 4.5 5.8" /></svg><span>Artists</span>
+        <app-icon name="artists" /><span>Artists</span>
       </a>
 
       <div class="nav-section-title library-section-header">
@@ -33,28 +33,28 @@
         <a class="nav-library-link" routerLink="/library" title="View Library">View</a>
       </div>
       <a routerLink="/liked" routerLinkActive="active" ariaCurrentWhenActive="page" title="Liked songs" class="nav-liked-link">
-        <span class="nav-liked-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></span>
+        <span class="nav-liked-badge" aria-hidden="true"><app-icon name="heart" /></span>
         <span class="nav-liked-meta">
           <strong>Liked Songs</strong>
           <small>{{ library.likedSongs().length }} songs</small>
         </span>
       </a>
       <a routerLink="/library" routerLinkActive="active" ariaCurrentWhenActive="page" title="Library">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5" /></svg><span>Collections</span>
+        <app-icon name="library" /><span>Collections</span>
       </a>
 
       @if (api.isAdmin()) {
         <div class="nav-section-title">Creator</div>
         <a routerLink="/admin" routerLinkActive="active" ariaCurrentWhenActive="page" title="Studio">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5zM3 12l9 5 9-5M3 16l9 5 9-5" /></svg><span>Studio</span>
+          <app-icon name="settings" /><span>Studio</span>
         </a>
       }
     </nav>
     <div class="account-nav">
       <button class="theme-toggle" [class.theme-light]="theme === 'light'" type="button" (click)="toggleTheme()" [attr.aria-label]="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'" [title]="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'">
         <span class="theme-icon-stage" aria-hidden="true">
-          <svg class="theme-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></svg>
-          <svg class="theme-moon" viewBox="0 0 24 24"><path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.6 8.6 0 1 0 20.5 15.2Z" /></svg>
+          <app-icon name="sun" class="theme-sun" />
+          <app-icon name="moon" class="theme-moon" />
         </span>
       </button>
       @if (api.user()) {
@@ -67,20 +67,20 @@
           @if (busy) {
             <span class="sign-out-spinner" aria-hidden="true"></span>
           } @else {
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5m5 5H3m10-9h5a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-5" /></svg>
+            <app-icon name="logout" />
           }
           <span>{{ busy ? 'Signing out…' : 'Sign out' }}</span>
         </button>
       } @else {
-        <a class="button button-quiet" routerLink="/login" aria-label="Log in"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5m5 5H3m10-9h5a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-5" /></svg><span>Log in</span></a>
-        <a class="button button-light" routerLink="/register" aria-label="Join K-Song"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" /></svg><span>Join K-Song</span></a>
+        <a class="button button-quiet" routerLink="/login" aria-label="Log in"><app-icon name="logout" /><span>Log in</span></a>
+        <a class="button button-light" routerLink="/register" aria-label="Join K-Song"><app-icon name="plus" /><span>Join K-Song</span></a>
       }
     </div>
   </header>
   <button class="sidebar-reopen" type="button" (click)="toggleSidebar()"
     [attr.aria-expanded]="!sidebarCollapsed" aria-controls="main-nav"
     aria-label="Open navigation" title="Open navigation">
-    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16" /></svg>
+    <app-icon name="panelOpen" />
   </button>
 
   @if (api.notice()) {
@@ -98,7 +98,7 @@
       <div class="player-left">
         <a class="player-track-link" routerLink="/now-playing" [attr.aria-label]="'Open now playing: ' + song.name">
           <span class="mini-cover" [style.background]="player.coverColor()">
-            <span aria-hidden="true">♫</span>
+            <app-icon name="music" />
             <app-media-image [imageKey]="song.imageKey" [alt]="''" />
           </span>
           <span class="player-copy">
@@ -116,7 +116,7 @@
               }
             </span>
           </span>
-          <svg class="player-open-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9" /></svg>
+          <app-icon name="external" class="player-open-icon" />
         </a>
         <button class="player-like-btn" type="button"
           [disabled]="!song.id"
@@ -125,7 +125,7 @@
           [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Save to Liked Songs'"
           [title]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Save to Liked Songs'"
           (click)="library.toggleLike(song); $event.stopPropagation()">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg>
+          <app-icon name="heart" />
         </button>
       </div>
     }
@@ -140,14 +140,14 @@
           (click)="player.toggleShuffle()"
           [attr.aria-label]="player.isShuffled() ? 'Disable shuffle' : 'Enable shuffle'"
           [title]="player.isShuffled() ? 'Shuffle on' : 'Shuffle off'">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L20 4M21 16v5h-5M15 15l5 5M4 4l5 5" /></svg>
+          <app-icon name="shuffle" />
         </button>
         <button class="player-control" type="button"
           [disabled]="(player.queueIndex() <= 0 && player.currentTime() <= 3) || player.loading()"
           (click)="player.playPrevious()"
           [attr.aria-label]="player.currentTime() > 3 ? 'Restart current song' : 'Play previous song'"
           [title]="player.currentTime() > 3 ? 'Restart current song' : 'Play previous song'">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 5v14M19 6l-9 6 9 6z" /></svg>
+          <app-icon name="skipBack" />
         </button>
         <button class="player-control player-control-main" type="button"
           [disabled]="player.loading() || !player.manifestUrl()"
@@ -157,22 +157,22 @@
           @if (player.loading()) {
             <span class="player-control-spinner" aria-hidden="true"></span>
           } @else if (player.isPlaying()) {
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5h3v14H8zm5 0h3v14h-3z" /></svg>
+            <app-icon name="pause" />
           } @else {
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg>
+            <app-icon name="play" />
           }
         </button>
         <button class="player-control" type="button"
           [disabled]="player.queueIndex() < 0 || (player.queueIndex() >= player.queue().length - 1 && player.repeatMode() === 'off') || player.loading()"
           (click)="player.playNext()" aria-label="Play next song" title="Next">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 5v14M5 6l9 6-9 6z" /></svg>
+          <app-icon name="skipForward" />
         </button>
         <button class="player-control player-control-sub" type="button"
           [class.is-active]="player.repeatMode() !== 'off'"
           (click)="player.cycleRepeat()"
           [attr.aria-label]="'Repeat: ' + player.repeatMode()"
           [title]="'Repeat: ' + player.repeatMode()">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" /></svg>
+          <app-icon name="repeat" />
           @if (player.repeatMode() === 'one') {
             <span class="repeat-badge" aria-hidden="true">1</span>
           }
@@ -191,18 +191,18 @@
     <div class="player-right">
       <a class="player-control player-util-btn" routerLink="/now-playing" [class.is-active]="isNowPlaying"
         aria-label="Queue & Now Playing" title="Queue & Now Playing">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" /><path d="m18 15 3 3-3 3" /></svg>
+        <app-icon name="queue" />
       </a>
       <div class="player-volume-group" role="group" aria-label="Volume control">
         <button class="player-control player-volume-btn" type="button" (click)="player.toggleMute()"
           [attr.aria-label]="player.isMuted() ? 'Unmute' : 'Mute'"
           [title]="player.isMuted() ? 'Unmute' : 'Mute'">
           @if (player.isMuted() || player.volume() === 0) {
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM22 9l-6 6M16 9l6 6" /></svg>
+            <app-icon name="mute" />
           } @else if (player.volume() < 0.5) {
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7" /></svg>
+            <app-icon name="volumeLow" />
           } @else {
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM19 5a10 10 0 0 1 0 14M15.5 8.5a5 5 0 0 1 0 7" /></svg>
+            <app-icon name="volumeHigh" />
           }
         </button>
         <div class="player-volume-bar">
@@ -213,7 +213,7 @@
         </div>
       </div>
       <button class="player-close" type="button" aria-label="Close player" title="Close player" (click)="player.stop()">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        <app-icon name="close" />
       </button>
     </div>
   </section>
