@@ -103,7 +103,7 @@ export class HomePageComponent implements OnInit {
   artistsError = '';
 
   ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId)) void this.load();
+    if (isPlatformBrowser(this.platformId)) { void this.load(); if (this.api.user()) void this.library.loadFavorites().catch(() => undefined); }
     else this.loading = false;
   }
 
