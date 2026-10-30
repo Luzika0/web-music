@@ -3,11 +3,12 @@ import { RouterLink } from '@angular/router';
 import { LibraryService } from '../../core/services/library.service';
 import { PlaybackService } from '../../core/services/playback.service';
 import { MediaImageComponent } from '../../shared/components/media-image.component';
+import { AppIconComponent } from '../../shared/components/app-icon.component';
 import { textLanguage } from '../../shared/utils/text-language';
 
 @Component({
   selector: 'app-now-playing-page',
-  imports: [RouterLink, MediaImageComponent],
+  imports: [RouterLink, MediaImageComponent, AppIconComponent],
   template: `
     <section class="now-playing-page" aria-labelledby="now-playing-title">
       <header class="now-playing-header">
@@ -33,7 +34,7 @@ import { textLanguage } from '../../shared/utils/text-language';
           <div class="now-playing-art-wrap" [class.is-playing]="player.isPlaying()">
             <div class="now-playing-glow" [style.background]="player.coverColor()"></div>
             <div class="now-playing-art" [style.background]="player.coverColor()">
-              <span aria-hidden="true">♫</span>
+              <app-icon name="music" />
               <app-media-image [imageKey]="song.imageKey" [alt]="song.name + ' cover art'" />
             </div>
             <div class="now-playing-orbit orbit-a"></div>
@@ -54,7 +55,7 @@ import { textLanguage } from '../../shared/utils/text-language';
                 [title]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'"
                 (click)="library.toggleLike(song)"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg>
+                <app-icon name="heart" />
               </button>
             </div>
             @if (player.error()) {
@@ -78,7 +79,7 @@ import { textLanguage } from '../../shared/utils/text-language';
 
             <div class="now-playing-controls">
               <button class="now-playing-mode" type="button" [class.is-active]="player.isShuffled()" (click)="player.toggleShuffle()" [attr.aria-pressed]="player.isShuffled()" [attr.aria-label]="player.isShuffled() ? 'Disable shuffle' : 'Enable shuffle'" title="Shuffle">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L20 4M21 16v5h-5M15 15l5 5M4 4l5 5" /></svg>
+                <app-icon name="shuffle" />
               </button>
               <button
                 class="now-playing-skip"
@@ -88,16 +89,16 @@ import { textLanguage } from '../../shared/utils/text-language';
                 [attr.aria-label]="player.currentTime() > 3 ? 'Restart current song' : 'Play previous song'"
                 [title]="player.currentTime() > 3 ? 'Restart current song' : 'Play previous song'"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 5v14M19 6l-9 6 9 6z" /></svg>
+                <app-icon name="skipBack" />
               </button>
               <button class="now-playing-toggle" type="button" [disabled]="player.loading() || !player.manifestUrl()" (click)="player.togglePlayback()"
                 [attr.aria-label]="player.isPlaying() ? 'Pause playback' : 'Resume playback'">
                 @if (player.loading()) {
                   <span class="now-playing-spinner" aria-hidden="true"></span>
                 } @else if (player.isPlaying()) {
-                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5h3v14H8zm5 0h3v14h-3z" /></svg>
+                  <app-icon name="pause" />
                 } @else {
-                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg>
+                  <app-icon name="play" />
                 }
               </button>
               <button
@@ -108,10 +109,10 @@ import { textLanguage } from '../../shared/utils/text-language';
                 aria-label="Play next song"
                 title="Play next song"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 5v14M5 6l9 6-9 6z" /></svg>
+                <app-icon name="skipForward" />
               </button>
               <button class="now-playing-mode" type="button" [class.is-active]="player.repeatMode() !== 'off'" (click)="player.cycleRepeat()" [attr.aria-pressed]="player.repeatMode() !== 'off'" [attr.aria-label]="'Repeat: ' + player.repeatMode()" [title]="'Repeat: ' + player.repeatMode()">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" /></svg>
+                <app-icon name="repeat" />
                 @if (player.repeatMode() === 'one') { <span aria-hidden="true">1</span> }
               </button>
             </div>
@@ -145,7 +146,7 @@ import { textLanguage } from '../../shared/utils/text-language';
                       }
                     </span>
                     <span class="play-queue-cover" [style.background]="colorFor(queuedSong.id)">
-                      <span aria-hidden="true">♫</span>
+                      <app-icon name="music" />
                       <app-media-image [imageKey]="queuedSong.imageKey" [alt]="''" />
                     </span>
                     <span class="play-queue-copy" [attr.lang]="textLanguage(queuedSong.name, queuedSong.artistName)">
@@ -155,7 +156,7 @@ import { textLanguage } from '../../shared/utils/text-language';
                     <span class="play-queue-state">
                       @if (player.queueIndex() === index) { Now playing } @else if (index < player.queueIndex()) { Played } @else { Up next }
                     </span>
-                    <svg class="play-queue-play" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" /></svg>
+                    <app-icon name="play" class="play-queue-play" />
                   </button>
                 </li>
               }
