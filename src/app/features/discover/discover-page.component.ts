@@ -146,6 +146,8 @@ export class DiscoverPageComponent implements OnInit {
   artistsPage: MediaPage | null = null;
   songsPage: MediaPage | null = null;
   private readonly artistNames = new Map<string, string>();
+  private artistRequestGeneration = 0;
+  private songRequestGeneration = 0;
   artistPage = 0;
   songPage = 0;
   artistSearch = '';
@@ -165,35 +167,48 @@ export class DiscoverPageComponent implements OnInit {
   }
 
   async loadArtists(): Promise<void> {
+    const generation = ++this.artistRequestGeneration;
+    const requestedPage = this.artistPage;
+    const requestedSearch = this.artistSearch.trim();
     this.artistsLoading = true;
     this.artistsError = '';
     try {
-      this.artistsPage = await this.api.artists(this.artistPage, this.pageSize, this.artistSearch);
-      for (const artist of this.artistsPage.items) {
+      const result = await this.api.artists(requestedPage, this.pageSize, requestedSearch);
+      if (generation !== this.artistRequestGeneration) return;
+      this.artistsPage = result;
+      for (const artist of result.items) {
         if (artist.id && artist.name) {
           this.artistNames.set(artist.id, artist.name);
         }
       }
       this.enrichSongArtists();
     } catch (error) {
-      this.artistsError = this.api.toUserMessage(error);
+      if (generation === this.artistRequestGeneration) this.artistsError = this.api.toUserMessage(error);
     } finally {
-      this.artistsLoading = false;
-      this.changeDetector.markForCheck();
+      if (generation === this.artistRequestGeneration) {
+        this.artistsLoading = false;
+        this.changeDetector.markForCheck();
+      }
     }
   }
 
   async loadSongs(): Promise<void> {
+    const generation = ++this.songRequestGeneration;
+    const requestedPage = this.songPage;
     this.songsLoading = true;
     this.songsError = '';
     try {
-      this.songsPage = await this.api.songs(this.songPage, this.pageSize);
+      const result = await this.api.songs(requestedPage, this.pageSize);
+      if (generation !== this.songRequestGeneration) return;
+      this.songsPage = result;
       this.enrichSongArtists();
     } catch (error) {
-      this.songsError = this.api.toUserMessage(error);
+      if (generation === this.songRequestGeneration) this.songsError = this.api.toUserMessage(error);
     } finally {
-      this.songsLoading = false;
-      this.changeDetector.markForCheck();
+      if (generation === this.songRequestGeneration) {
+        this.songsLoading = false;
+        this.changeDetector.markForCheck();
+      }
     }
   }
 
