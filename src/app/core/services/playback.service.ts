@@ -153,6 +153,10 @@ export class PlaybackService {
     }
   }
 
+  cancelPendingPlayback(): void {
+    this.pendingPlayback = null;
+  }
+
   async resumePendingPlayback(): Promise<void> {
     const pending = this.pendingPlayback;
     if (!pending || !this.api.user()) return;
