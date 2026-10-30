@@ -126,6 +126,30 @@ import { MediaImageComponent } from '../../shared/components/media-image.compone
               </button>
             </form>
           </section>
+          <section class="admin-card">
+            <div class="admin-card-title">
+              <span class="admin-card-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm12-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z" /></svg></span>
+              <div><p class="eyebrow">LIVE CATALOG</p><h2>Manage uploaded songs</h2></div>
+              <button class="button button-quiet" type="button" (click)="loadSongs()" [disabled]="songsLoading">Refresh</button>
+            </div>
+            @if (songsLoading) { <p role="status">Loading songs…</p> }
+            @else if (songLookupError) { <p class="artist-lookup-error" role="alert">{{ songLookupError }}</p> }
+            @else if (songOptions.length) {
+              @for (song of songOptions; track song.id) {
+                <div class="song-row">
+                  <span><strong>{{ song.name }}</strong><small class="record-id">ID · {{ song.id }}</small></span>
+                  <button class="button button-danger" type="button" (click)="deleteSong(song.id)" [disabled]="!!busy">Delete</button>
+                </div>
+              }
+              @if (songsPageCount > 1) {
+                <div class="artist-picker-pagination">
+                  <button class="button button-quiet" type="button" (click)="changeSongsPage(-1)" [disabled]="songsPage === 0 || songsLoading">Previous</button>
+                  <span>Page {{ songsPage + 1 }} of {{ songsPageCount }}</span>
+                  <button class="button button-quiet" type="button" (click)="changeSongsPage(1)" [disabled]="songsPage >= songsPageCount - 1 || songsLoading">Next</button>
+                </div>
+              }
+            } @else { <p>No songs are available in the catalog yet.</p> }
+          </section>
         </div>
 
         <section class="admin-card upload-card">
@@ -250,6 +274,12 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   songType = '';
   readonly songTypes = ['ROCK', 'CLASSICAL', 'POP', 'JAZZ', 'HIP_HOP', 'COUNTRY', 'OTHER'];
   songIdToDelete = '';
+  songOptions: MediaItem[] = [];
+  songsLoading = false;
+  songLookupError = '';
+  songsPage = 0;
+  songsPageCount = 1;
+  private songRequestGeneration = 0;
   artistImage: File | null = null;
   albumImage: File | null = null;
   songFile: File | null = null;
@@ -270,7 +300,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   private destroyed = false;
 
   ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId)) void this.loadArtists();
+    if (isPlatformBrowser(this.platformId)) { void this.loadArtists(); void this.loadSongs(); }
   }
 
   setArtistImage(event: Event): void {
@@ -360,12 +390,36 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     await this.perform('song', 'Song uploaded successfully.', () => this.api.uploadSong(form));
   }
 
-  async deleteSong(): Promise<void> {
-    if (!this.songIdToDelete.trim()) { return; }
-    if (!isPlatformBrowser(this.platformId) || !window.confirm(`Permanently delete song ${this.songIdToDelete}?`)) {
-      return;
+  async loadSongs(page = 0): Promise<void> {
+    const generation = ++this.songRequestGeneration;
+    this.songsLoading = true;
+    this.songLookupError = '';
+    try {
+      const result = await this.api.songs(page, 20);
+      if (this.destroyed || generation !== this.songRequestGeneration) return;
+      this.songOptions = result.items.filter(song => !!song.id);
+      this.songsPage = result.page;
+      this.songsPageCount = result.totalPages ?? (result.items.length === 20 ? page + 2 : page + 1);
+    } catch (error) {
+      if (this.destroyed || generation !== this.songRequestGeneration) return;
+      this.songLookupError = this.api.toUserMessage(error);
+    } finally {
+      if (!this.destroyed && generation === this.songRequestGeneration) {
+        this.songsLoading = false;
+        this.changeDetector.markForCheck();
+      }
     }
-    await this.perform('delete', 'Song deleted successfully.', () => this.api.deleteSong(this.songIdToDelete.trim()));
+  }
+
+  changeSongsPage(delta: number): void {
+    const page = this.songsPage + delta;
+    if (page >= 0 && page < this.songsPageCount) void this.loadSongs(page);
+  }
+
+  async deleteSong(songId = this.songIdToDelete.trim()): Promise<void> {
+    if (!songId) return;
+    if (!isPlatformBrowser(this.platformId) || !window.confirm('Permanently delete song ' + songId + '?')) return;
+    await this.perform('delete', 'Song deleted successfully.', () => this.api.deleteSong(songId));
   }
 
   private fileFrom(event: Event): File | null {
@@ -388,6 +442,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     try {
       await action();
       this.success = successMessage;
+      if (operation === 'delete') await this.loadSongs(this.songsPage);
       if (operation === 'artist') {
         this.artistSearch = this.artistName;
         await this.loadArtists(0, this.artistSearch);
