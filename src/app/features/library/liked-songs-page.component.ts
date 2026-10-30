@@ -22,7 +22,7 @@ import { textLanguage } from '../../shared/utils/text-language';
           @for (song of library.likedSongs(); track song.id) {
             <article class="song-row">
               <button class="song-cover" type="button" [style.background]="colorFor(song)" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, library.likedSongs())">
-                <app-icon name="music" /><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="play-overlay" aria-hidden="true">▶</span>
+                <app-icon name="music" /><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="play-overlay" aria-hidden="true"><app-icon name="play" /></span>
               </button>
               <div class="song-details" [attr.lang]="textLanguage(song.name, song.artistName)"><h2>{{ song.name }}</h2><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
               <button class="like-button liked" type="button" aria-label="Remove from Liked Songs" (click)="library.removeLikedSong(song.id)"><app-icon name="heart" /></button>
