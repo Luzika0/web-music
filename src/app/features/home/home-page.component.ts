@@ -5,12 +5,13 @@ import { MediaItem, MusicApiService } from '../../core/services/music-api.servic
 import { PlaybackService } from '../../core/services/playback.service';
 import { LibraryService } from '../../core/services/library.service';
 import { MediaImageComponent } from '../../shared/components/media-image.component';
+import { AppIconComponent } from '../../shared/components/app-icon.component';
 import { getAppConfig } from '../../core/config/app-config';
 import { textLanguage } from '../../shared/utils/text-language';
 
 @Component({
   selector: 'app-home-page',
-  imports: [RouterLink, MediaImageComponent],
+  imports: [RouterLink, MediaImageComponent, AppIconComponent],
   template: `
     <section class="home-hero">
       <div class="home-copy">
@@ -18,8 +19,8 @@ import { textLanguage } from '../../shared/utils/text-language';
         <h1>Find the feeling.<br /><em>Follow the sound.</em></h1>
         <p>Meet new artists, rediscover a mood, and make the soundtrack yours.</p>
         <div class="home-actions">
-          <a class="button button-light" routerLink="/search"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 19 19 5M7 5h12v12" /></svg><span>Explore music</span></a>
-          <a class="button button-quiet" routerLink="/artists"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 5.2a3.5 3.5 0 0 1 0 6.7M17 14a6 6 0 0 1 4.5 5.8" /></svg><span>Meet the artists</span></a>
+          <a class="button button-light" routerLink="/search"><app-icon name="external" /><span>Explore music</span></a>
+          <a class="button button-quiet" routerLink="/artists"><app-icon name="artists" /><span>Meet the artists</span></a>
         </div>
       </div>
       <div class="home-record" aria-hidden="true"><span>k.</span></div>
@@ -28,21 +29,21 @@ import { textLanguage } from '../../shared/utils/text-language';
 
     <section class="section-block home-shortcuts" aria-label="Your shortcuts">
       <a class="shortcut-card liked-shortcut" routerLink="/liked">
-        <span class="shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></span>
+        <span class="shortcut-icon" aria-hidden="true"><app-icon name="heart" /></span>
         <span><strong>Liked Songs</strong><small>{{ library.likedSongs().length }} saved on this device</small></span>
-        <span class="shortcut-arrow" aria-hidden="true">↗</span>
+        <span class="shortcut-arrow" aria-hidden="true"><app-icon name="external" /></span>
       </a>
       <a class="shortcut-card" routerLink="/library">
-        <span class="shortcut-icon library-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5" /></svg></span>
+        <span class="shortcut-icon library-icon" aria-hidden="true"><app-icon name="library" /></span>
         <span><strong>Your Library</strong><small>Collections and saved music</small></span>
-        <span class="shortcut-arrow" aria-hidden="true">↗</span>
+        <span class="shortcut-arrow" aria-hidden="true"><app-icon name="external" /></span>
       </a>
     </section>
 
     <section class="section-block" aria-labelledby="home-songs-heading">
       <div class="section-heading">
         <div><p class="eyebrow">A PLACE TO START</p><h2 id="home-songs-heading">Fresh from the catalog</h2></div>
-        <a class="section-link" routerLink="/search">Find more <span aria-hidden="true">→</span></a>
+        <a class="section-link" routerLink="/search">Find more <app-icon name="next" /></a>
       </div>
       @if (loading) {
         <div class="home-song-grid" role="status" aria-label="Loading music">
@@ -55,22 +56,22 @@ import { textLanguage } from '../../shared/utils/text-language';
           @for (song of songs; track song.id || $index) {
             <article class="home-song-card">
               <button class="home-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
-                <span aria-hidden="true">♫</span><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="home-cover-play" aria-hidden="true">▶</span>
+                <app-icon name="music" /><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="home-cover-play" aria-hidden="true">▶</span>
               </button>
               <div class="home-song-meta" [attr.lang]="textLanguage(song.name, song.artistName)"><strong>{{ song.name }}</strong><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
-              <button class="like-button" type="button" [disabled]="!song.id" [class.liked]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" [attr.aria-pressed]="library.isLiked(song.id)" (click)="library.toggleLike(song)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.8 1.8Z" /></svg></button>
+              <button class="like-button" type="button" [disabled]="!song.id" [class.liked]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove ' + song.name + ' from Liked Songs' : 'Add ' + song.name + ' to Liked Songs'" [attr.aria-pressed]="library.isLiked(song.id)" (click)="library.toggleLike(song)"><app-icon name="heart" /></button>
             </article>
           }
         </div>
       } @else {
-        <div class="empty-state"><span class="empty-icon" aria-hidden="true">♫</span><h3>The catalog is taking a quiet moment</h3><p>Browse artists or try again when the service is available.</p><a class="button button-quiet" routerLink="/artists">Browse artists</a></div>
+        <div class="empty-state"><span class="empty-icon" aria-hidden="true"><app-icon name="music" size="30" /></span><h3>The catalog is taking a quiet moment</h3><p>Browse artists or try again when the service is available.</p><a class="button button-quiet" routerLink="/artists">Browse artists</a></div>
       }
     </section>
 
     <section class="section-block home-artists" aria-labelledby="home-artists-heading">
       <div class="section-heading">
         <div><p class="eyebrow">MADE BY PEOPLE, FELT BY EVERYONE</p><h2 id="home-artists-heading">Artists to know</h2></div>
-        <a class="section-link" routerLink="/artists">All artists <span aria-hidden="true">→</span></a>
+        <a class="section-link" routerLink="/artists">All artists <app-icon name="next" /></a>
       </div>
       @if (artistsError) { <div class="inline-alert error-alert" role="alert">{{ artistsError }} <button class="text-button" type="button" (click)="retry()" [disabled]="loading">Try again</button></div> }
       <div class="home-artist-grid">
