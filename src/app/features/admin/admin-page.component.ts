@@ -186,7 +186,7 @@ import { AppIconComponent } from '../../shared/components/app-icon.component';
                 @if (artistsPageCount > 1) {
                   <div class="artist-picker-pagination">
                     <button type="button" class="button button-quiet" (click)="changeArtistPage(-1)" [disabled]="artistPage === 0 || artistsLoading" aria-label="Previous artist results">
-                      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg><span>Previous</span>
+                      <app-icon name="previous" /><span>Previous</span>
                     </button>
                     <span>Page {{ artistPage + 1 }} of {{ artistsPageCount }}</span>
                     <button type="button" class="button button-quiet" (click)="changeArtistPage(1)" [disabled]="artistPage >= artistsPageCount - 1 || artistsLoading" aria-label="Next artist results">
@@ -219,7 +219,7 @@ import { AppIconComponent } from '../../shared/components/app-icon.component';
                 <option [value]="type">{{ type.replace('_', ' ') }}</option>
               }
             </select>
-            <label class="admin-file-label" for="song-file"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm12-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z" /></svg>Audio file</label>
+            <label class="admin-file-label" for="song-file"><app-icon name="music" />Audio file</label>
             <input id="song-file" name="songFile" type="file" accept="audio/*" (change)="setSongFile($event)" required />
             @if (songFile) { <span class="admin-file-selected"><app-icon name="check" />{{ songFile.name }}</span> }
             <label class="admin-file-label" for="song-image"><app-icon name="image" />Song cover</label>
