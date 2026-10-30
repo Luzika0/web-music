@@ -4373,3 +4373,16 @@ button, a { touch-action: manipulation; }
   .library-create-form button { width: 100%; }
   .playlist-song-ids li { align-items: flex-start; flex-direction: column; }
 }
+
+
+/* Real playlist track rows */
+.playlist-track-row { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+.playlist-track-play { display: flex; min-width: 0; flex: 1; align-items: center; gap: 12px; padding: 0; border: 0; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.playlist-track-play app-media-image { display: block; width: 46px; height: 46px; flex: 0 0 46px; overflow: hidden; border-radius: 8px; }
+.playlist-track-play > span { display: grid; min-width: 0; gap: 4px; }
+.playlist-track-play strong, .playlist-track-play small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.playlist-track-play strong { font-size: 13px; }
+.playlist-track-play small { color: var(--muted); font-size: 11px; }
+.playlist-track-play:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.library-create-form select { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--background,transparent); color: var(--text); font: inherit; }
+@media (max-width: 700px) { .playlist-track-row { align-items: flex-start; flex-direction: column; } .playlist-order-actions { flex-wrap: wrap; } }
