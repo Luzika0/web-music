@@ -34,7 +34,7 @@ import { textLanguage } from '../../shared/utils/text-language';
       @if (error) {
         <div class="inline-alert error-alert" role="alert">{{ error }} <button class="text-button" type="button" (click)="retrySearch()">Try again</button></div>
       } @else if (!hasSearched) {
-        <div class="search-welcome"><span class="search-welcome-icon" aria-hidden="true">♫</span><h2>Start with a name, a song, or a feeling.</h2><p>Search uses the current K-Song music catalog. Results depend on what the backend currently provides.</p></div>
+        <div class="search-welcome"><span class="search-welcome-icon" aria-hidden="true"><app-icon name="music" size="28" /></span><h2>Start with a name, a song, or a feeling.</h2><p>Search uses the current K-Song music catalog. Results depend on what the backend currently provides.</p></div>
       } @else if (loading) {
         <div class="inline-alert info-alert" role="status">Finding a few good matches…</div>
       } @else if (!songs.length && !artists.length) {
@@ -47,7 +47,7 @@ import { textLanguage } from '../../shared/utils/text-language';
               @for (song of songs; track song.id || $index) {
                 <article class="song-row">
                   <button class="song-cover" type="button" [style.background]="colorFor(song)" [disabled]="!song.id" [attr.aria-label]="'Play ' + song.name" (click)="player.play(song, songs)">
-                    <app-icon name="music" /><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="play-overlay" aria-hidden="true">▶</span>
+                    <app-icon name="music" /><app-media-image [imageKey]="song.imageKey" [alt]="''" /><span class="play-overlay" aria-hidden="true"><app-icon name="play" /></span>
                   </button>
                   <div class="song-details" [attr.lang]="textLanguage(song.name, song.artistName)"><h3>{{ song.name }}</h3><span>{{ song.artistName || 'Artist details unavailable' }}</span></div>
                   <button class="like-button" type="button" [disabled]="!song.id" [class.liked]="library.isLiked(song.id)" [attr.aria-pressed]="library.isLiked(song.id)" [attr.aria-label]="library.isLiked(song.id) ? 'Remove from Liked Songs' : 'Add to Liked Songs'" (click)="library.toggleLike(song)"><app-icon name="heart" /></button>
@@ -65,7 +65,7 @@ import { textLanguage } from '../../shared/utils/text-language';
                 <article class="artist-card">
                   <a class="search-artist-link" [routerLink]="['/artists']" [queryParams]="{ search: artist.name }" [attr.aria-label]="'Find music by ' + artist.name">
                   <div class="artist-art" [style.background]="colorFor(artist)"><span>{{ initial(artist.name) }}</span><app-media-image [imageKey]="artist.imageKey" [alt]="artist.name + ' artist portrait'" /></div>
-                  <div class="artist-info" [attr.lang]="textLanguage(artist.name)"><h3>{{ artist.name }}</h3><span>Artist · Find music →</span></div>
+                  <div class="artist-info" [attr.lang]="textLanguage(artist.name)"><h3>{{ artist.name }}</h3><span>Artist · Find music <app-icon name="next" size="14" /></span></div>
                   </a>
                 </article>
               }
