@@ -218,6 +218,8 @@ export class AuthPageComponent implements OnInit {
     }
     if (this.mode === 'login' && this.route.snapshot.queryParamMap.get('passwordReset') === '1') {
       this.success = 'Your password has been reset successfully. Sign in with your new password.';
+    } else if (this.mode === 'login' && this.route.snapshot.queryParamMap.get('signInToPlay') === '1') {
+      this.success = 'Sign in or create an account to start playing this track. We will take you back to your music afterward.';
     }
     if (this.route.snapshot.queryParamMap.get('reason') === 'session-expired') {
       this.error = 'Your session expired. Please sign in again.';
