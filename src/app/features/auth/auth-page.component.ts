@@ -238,7 +238,11 @@ export class AuthPageComponent implements OnInit {
           break;
         case 'login': {
           await this.api.login(this.identity, this.password);
-          await this.router.navigate([this.api.isAdmin() ? '/admin' : '/']);
+          const requested = this.route.snapshot.queryParamMap.get('next');
+          // Only restore same-origin application paths, never an external redirect.
+          const safeNext = requested?.startsWith('/') && !requested.startsWith('//') ? requested : null;
+          const destination = safeNext ?? (this.api.isAdmin() ? '/admin' : '/');
+          await this.router.navigateByUrl(destination);
           break;
         }
         case 'forgot-password':
