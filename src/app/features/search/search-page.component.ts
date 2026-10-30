@@ -30,7 +30,7 @@ import { textLanguage } from '../../shared/utils/text-language';
       </form>
 
       @if (error) {
-        <div class="inline-alert error-alert" role="alert">{{ error }} <button class="text-button" type="button" (click)="search()">Try again</button></div>
+        <div class="inline-alert error-alert" role="alert">{{ error }} <button class="text-button" type="button" (click)="retrySearch()">Try again</button></div>
       } @else if (!hasSearched) {
         <div class="search-welcome"><span class="search-welcome-icon" aria-hidden="true">♫</span><h2>Start with a name, a song, or a feeling.</h2><p>Search uses the current K-Song music catalog. Results depend on what the backend currently provides.</p></div>
       } @else if (loading) {
@@ -121,6 +121,11 @@ export class SearchPageComponent implements OnInit {
       queryParamsHandling: 'merge',
       replaceUrl: false,
     });
+  }
+
+  retrySearch(): void {
+    const term = this.query.trim();
+    if (term && !this.loading) void this.runSearch(term);
   }
 
   clearSearch(): void {
