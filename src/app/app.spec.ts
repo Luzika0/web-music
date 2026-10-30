@@ -528,6 +528,25 @@ describe('MusicApiService', () => {
     });
   });
 
+  it('never treats an artist ID as a playable song ID', async () => {
+    const songs = api.songs(0, 8);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const request = http.expectOne('/api/auth/media/list-song?page=0&size=8&searchText=');
+    request.flush({
+      data: {
+        content: [{ artistId: 'artist-42', songName: 'Missing song identifier' }],
+        totalPage: 1,
+      },
+    });
+
+    const result = await songs;
+    expect(result.items[0]).toMatchObject({
+      id: '',
+      artistId: 'artist-42',
+      name: 'Missing song identifier',
+    });
+  });
+
   it('passes a search term to the existing song catalogue query', async () => {
     const songs = api.songs(0, 8, 'night drive');
     await new Promise((resolve) => setTimeout(resolve, 0));
