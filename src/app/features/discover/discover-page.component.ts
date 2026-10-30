@@ -1,9 +1,8 @@
 import { isPlatformBrowser } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MediaItem, MediaPage, MusicApiService } from '../../core/services/music-api.service';
 import { LibraryService } from '../../core/services/library.service';
@@ -155,6 +154,8 @@ export class DiscoverPageComponent implements OnInit {
   private readonly artistNames = new Map<string, string>();
   private artistRequestGeneration = 0;
   private songRequestGeneration = 0;
+  private lastArtistRouteKey: string | null = null;
+  private lastSongRouteKey: string | null = null;
   artistPage = 0;
   songPage = 0;
   artistSearch = '';
@@ -175,8 +176,16 @@ export class DiscoverPageComponent implements OnInit {
       this.artistPage = Number.isInteger(artistPage) && artistPage >= 0 ? artistPage : 0;
       this.songPage = Number.isInteger(songPage) && songPage >= 0 ? songPage : 0;
       this.artistSearch = params.get('artist') ?? '';
-      void this.loadArtists();
-      void this.loadSongs();
+      const artistRouteKey = `${this.artistPage}|${this.artistSearch.trim()}`;
+      const songRouteKey = String(this.songPage);
+      if (artistRouteKey !== this.lastArtistRouteKey) {
+        this.lastArtistRouteKey = artistRouteKey;
+        void this.loadArtists();
+      }
+      if (songRouteKey !== this.lastSongRouteKey) {
+        this.lastSongRouteKey = songRouteKey;
+        void this.loadSongs();
+      }
     });
   }
 
@@ -228,6 +237,11 @@ export class DiscoverPageComponent implements OnInit {
 
   searchArtists(): void {
     const term = this.artistSearch.trim();
+    if (term === (this.route.snapshot.queryParamMap.get('artist') ?? '')
+      && this.artistPage === 0) {
+      void this.loadArtists();
+      return;
+    }
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { artist: term || null, artistPage: null },
