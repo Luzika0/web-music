@@ -44,7 +44,16 @@ app.use((req, res, next) => {
     .then((response) =>
       response ? writeResponseToNodeResponse(response, res) : next(),
     )
-    .catch(next);
+    .catch((error: unknown) => {
+      // Browsers may cancel an SSR request when navigation changes (for example,
+      // while redirecting to /login). The disconnect is expected and must not be
+      // reported as an application/server failure.
+      const abortError = error instanceof Error && error.name === 'AbortError';
+      if (abortError || req.destroyed || res.destroyed) {
+        return;
+      }
+      next(error);
+    });
 });
 
 /**
