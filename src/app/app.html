@@ -1,4 +1,4 @@
-<div class="app-shell" [class.sidebar-collapsed]="sidebarCollapsed" [class.has-current-song]="!!player.currentSong()" [class.is-now-playing]="isNowPlaying">
+<div class="app-shell" [class.sidebar-collapsed]="sidebarCollapsed" [class.has-current-song]="!!player.currentSong()" [class.is-now-playing]="isNowPlaying" [class.is-auth-page]="isAuthPage">
   <a class="skip-link" href="#main-content">Skip to content</a>
   <header class="topbar" [class.sidebar-collapsed]="sidebarCollapsed">
     <div class="sidebar-brand-row">
@@ -93,7 +93,7 @@
     <router-outlet />
   </main>
 
-  <section class="player-bar" [class.player-hidden]="!player.currentSong()" [class.player-route-hidden]="isNowPlaying" [class.is-playing]="player.isPlaying()" [class.is-loading]="player.loading()" aria-label="Music player">
+  <section class="player-bar" [class.player-hidden]="!player.currentSong()" [class.player-route-hidden]="isNowPlaying || isAuthPage" [class.is-playing]="player.isPlaying()" [class.is-loading]="player.loading()" aria-label="Music player">
     @if (player.currentSong(); as song) {
       <div class="player-left">
         <a class="player-track-link" routerLink="/now-playing" [attr.aria-label]="'Open now playing: ' + song.name">

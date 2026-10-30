@@ -129,6 +129,58 @@ describe('AuthPageComponent', () => {
     fixture.destroy();
   });
 
+  it('redirects to login after a successful password reset', async () => {
+    const api = {
+      resetPassword: vi.fn().mockResolvedValue(undefined),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    await TestBed.configureTestingModule({
+      imports: [AuthPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: MusicApiService, useValue: api },
+      ],
+    }).compileComponents();
+
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(AuthPageComponent);
+    fixture.componentInstance.mode = 'reset-password';
+    fixture.componentInstance.email = 'listener@example.com';
+    fixture.componentInstance.otp = '123456';
+    fixture.componentInstance.password = 'new-password-123';
+
+    await fixture.componentInstance.submit();
+
+    expect(api.resetPassword).toHaveBeenCalledWith('listener@example.com', '123456', 'new-password-123');
+    expect(router.navigate).toHaveBeenCalledWith(['/login'], {
+      queryParams: { passwordReset: '1' },
+      replaceUrl: true,
+    });
+    expect(fixture.componentInstance.password).toBe('');
+    expect(fixture.componentInstance.otp).toBe('');
+    fixture.destroy();
+  });
+
+  it('shows a password-reset success message on the login page', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AuthPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: MusicApiService, useValue: {} },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AuthPageComponent);
+    fixture.componentInstance.mode = 'login';
+    fixture.componentInstance.success = 'Your password has been reset successfully. Sign in with your new password.';
+    fixture.detectChanges();
+
+    const success = (fixture.nativeElement as HTMLElement).querySelector('.success-alert');
+    expect(success?.textContent).toContain('password has been reset successfully');
+    fixture.destroy();
+  });
+
   it('sends an admin to the creator studio after login', async () => {
     const api = {
       login: vi.fn().mockResolvedValue(undefined),
@@ -880,6 +932,51 @@ describe('PlaybackService queue', () => {
     expect(api.playbackSession).toHaveBeenCalledTimes(3);
 
     playback.stop();
+  });
+});
+
+describe('PlaybackService latest request state', () => {
+  it('does not let an older playback request clear the newer request loading state', async () => {
+    const makeSession = (songId: string) => ({
+      token: `token-${songId}`,
+      sessionId: `session-${songId}`,
+      expiresAt: '2099-01-01T00:00:00Z',
+      songId,
+    });
+    let resolveFirst!: (value: ReturnType<typeof makeSession>) => void;
+    let resolveSecond!: (value: ReturnType<typeof makeSession>) => void;
+    const firstSession = new Promise<ReturnType<typeof makeSession>>((resolve) => resolveFirst = resolve);
+    const secondSession = new Promise<ReturnType<typeof makeSession>>((resolve) => resolveSecond = resolve);
+    const api = {
+      playbackSession: vi.fn()
+        .mockImplementationOnce(() => firstSession)
+        .mockImplementationOnce(() => secondSession),
+      playbackStatus: vi.fn(async () => true),
+      watchPlaybackEvents: vi.fn(() => () => {}),
+      absoluteUrl: vi.fn((path: string) => path),
+      toUserMessage: vi.fn((error: unknown) => String(error)),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: { navigate: vi.fn(async () => true) } },
+        { provide: MusicApiService, useValue: api },
+      ],
+    });
+    const playback = TestBed.inject(PlaybackService);
+    const first = { id: 'song-1', artistId: 'artist-1', name: 'First', artistName: 'Artist', imageKey: '', kind: 'song' as const };
+    const second = { id: 'song-2', artistId: 'artist-2', name: 'Second', artistName: 'Artist', imageKey: '', kind: 'song' as const };
+
+    const firstRequest = playback.play(first);
+    const secondRequest = playback.play(second);
+    resolveFirst(makeSession(first.id));
+    await firstRequest;
+    expect(playback.currentSong()?.id).toBe(second.id);
+    expect(playback.loading()).toBe(true);
+
+    resolveSecond(makeSession(second.id));
+    await secondRequest;
+    expect(playback.loading()).toBe(false);
+    expect(playback.currentSong()?.id).toBe(second.id);
   });
 });
 

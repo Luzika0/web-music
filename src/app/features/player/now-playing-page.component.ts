@@ -77,6 +77,9 @@ import { textLanguage } from '../../shared/utils/text-language';
             </div>
 
             <div class="now-playing-controls">
+              <button class="now-playing-mode" type="button" [class.is-active]="player.isShuffled()" (click)="player.toggleShuffle()" [attr.aria-pressed]="player.isShuffled()" [attr.aria-label]="player.isShuffled() ? 'Disable shuffle' : 'Enable shuffle'" title="Shuffle">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L20 4M21 16v5h-5M15 15l5 5M4 4l5 5" /></svg>
+              </button>
               <button
                 class="now-playing-skip"
                 type="button"
@@ -100,12 +103,16 @@ import { textLanguage } from '../../shared/utils/text-language';
               <button
                 class="now-playing-skip"
                 type="button"
-                [disabled]="player.queueIndex() < 0 || player.queueIndex() >= player.queue().length - 1 || player.loading()"
+                [disabled]="player.queueIndex() < 0 || (player.queueIndex() >= player.queue().length - 1 && player.repeatMode() !== 'all') || player.loading()"
                 (click)="player.playNext()"
                 aria-label="Play next song"
                 title="Play next song"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 5v14M5 6l9 6-9 6z" /></svg>
+              </button>
+              <button class="now-playing-mode" type="button" [class.is-active]="player.repeatMode() !== 'off'" (click)="player.cycleRepeat()" [attr.aria-pressed]="player.repeatMode() !== 'off'" [attr.aria-label]="'Repeat: ' + player.repeatMode()" [title]="'Repeat: ' + player.repeatMode()">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" /></svg>
+                @if (player.repeatMode() === 'one') { <span aria-hidden="true">1</span> }
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, MediaPage, MusicApiService } from '../../core/services/music-api.service';
 import { MediaImageComponent } from '../../shared/components/media-image.component';
@@ -57,6 +57,8 @@ import { textLanguage } from '../../shared/utils/text-language';
 export class ArtistsPageComponent implements OnInit {
   private readonly api = inject(MusicApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private requestGeneration = 0;
   private readonly platformId = inject(PLATFORM_ID);
   private readonly pageSize = getAppConfig().pageSize;
   readonly textLanguage = textLanguage;
@@ -80,20 +82,35 @@ export class ArtistsPageComponent implements OnInit {
   }
 
   async load(): Promise<void> {
+    const generation = ++this.requestGeneration;
+    const requestedPage = this.pageNumber;
+    const requestedSearch = this.searchText.trim();
     this.loading = true;
     this.error = '';
     try {
-      this.page = await this.api.artists(this.pageNumber, this.pageSize, this.searchText);
+      const result = await this.api.artists(requestedPage, this.pageSize, requestedSearch);
+      if (generation !== this.requestGeneration) return;
+      this.page = result;
     } catch (error) {
-      this.error = this.api.toUserMessage(error);
+      if (generation === this.requestGeneration) this.error = this.api.toUserMessage(error);
     } finally {
-      this.loading = false;
+      if (generation === this.requestGeneration) this.loading = false;
     }
   }
 
   search(): void {
     this.pageNumber = 0;
-    void this.load();
+    const term = this.searchText.trim();
+    if (term === (this.route.snapshot.queryParamMap.get('search') ?? '')) {
+      void this.load();
+      return;
+    }
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: this.searchText.trim() ? { search: this.searchText.trim() } : { search: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
   }
 
   changePage(delta: number): void {

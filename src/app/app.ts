@@ -35,6 +35,11 @@ export class App implements AfterViewInit, OnDestroy {
     return this.router.url.split(/[?#]/, 1)[0] === '/now-playing';
   }
 
+  get isAuthPage(): boolean {
+    return ['/login', '/register', '/verify', '/forgot-password', '/reset-password']
+      .includes(this.router.url.split(/[?#]/, 1)[0]);
+  }
+
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
       const config = getAppConfig();

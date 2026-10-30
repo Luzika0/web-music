@@ -19,7 +19,7 @@ import { getAppConfig } from '../../core/config/app-config';
         <p class="eyebrow">YOUR NEXT FAVORITE IS HERE</p>
         <h1>A little more <em>music.</em><br />A lot more you.</h1>
         <p class="hero-lead">Find the sounds that feel like your own. Fresh voices, familiar moods, all in one place.</p>
-        <a class="button button-light hero-action" routerLink="/register">Find your sound <span aria-hidden="true">↗</span></a>
+        <a class="button button-light hero-action" [routerLink]="api.user() ? '/search' : '/register'">{{ api.user() ? 'Explore music' : 'Find your sound' }} <span aria-hidden="true">↗</span></a>
       </div>
       <div class="hero-art" aria-hidden="true">
         <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
@@ -57,11 +57,13 @@ import { getAppConfig } from '../../core/config/app-config';
         <div class="artist-grid">
           @for (artist of artistsPage?.items; track artist.id || $index) {
             <article class="artist-card">
+              <a class="discover-artist-link" [routerLink]="['/artists']" [queryParams]="{ search: artist.name }" [attr.aria-label]="'Browse ' + artist.name">
               <div class="artist-art" [style.background]="colorFor(artist)" aria-hidden="true">
                 <span>{{ initial(artist.name) }}</span>
                 <app-media-image [imageKey]="artist.imageKey" [alt]="artist.name + ' artist portrait'" />
               </div>
-              <div class="artist-info"><h3>{{ artist.name }}</h3><span>Artist</span></div>
+              <div class="artist-info"><h3>{{ artist.name }}</h3><span>Artist · Explore music →</span></div>
+              </a>
             </article>
           }
         </div>
@@ -146,6 +148,8 @@ export class DiscoverPageComponent implements OnInit {
   artistsPage: MediaPage | null = null;
   songsPage: MediaPage | null = null;
   private readonly artistNames = new Map<string, string>();
+  private artistRequestGeneration = 0;
+  private songRequestGeneration = 0;
   artistPage = 0;
   songPage = 0;
   artistSearch = '';
@@ -165,35 +169,48 @@ export class DiscoverPageComponent implements OnInit {
   }
 
   async loadArtists(): Promise<void> {
+    const generation = ++this.artistRequestGeneration;
+    const requestedPage = this.artistPage;
+    const requestedSearch = this.artistSearch.trim();
     this.artistsLoading = true;
     this.artistsError = '';
     try {
-      this.artistsPage = await this.api.artists(this.artistPage, this.pageSize, this.artistSearch);
-      for (const artist of this.artistsPage.items) {
+      const result = await this.api.artists(requestedPage, this.pageSize, requestedSearch);
+      if (generation !== this.artistRequestGeneration) return;
+      this.artistsPage = result;
+      for (const artist of result.items) {
         if (artist.id && artist.name) {
           this.artistNames.set(artist.id, artist.name);
         }
       }
       this.enrichSongArtists();
     } catch (error) {
-      this.artistsError = this.api.toUserMessage(error);
+      if (generation === this.artistRequestGeneration) this.artistsError = this.api.toUserMessage(error);
     } finally {
-      this.artistsLoading = false;
-      this.changeDetector.markForCheck();
+      if (generation === this.artistRequestGeneration) {
+        this.artistsLoading = false;
+        this.changeDetector.markForCheck();
+      }
     }
   }
 
   async loadSongs(): Promise<void> {
+    const generation = ++this.songRequestGeneration;
+    const requestedPage = this.songPage;
     this.songsLoading = true;
     this.songsError = '';
     try {
-      this.songsPage = await this.api.songs(this.songPage, this.pageSize);
+      const result = await this.api.songs(requestedPage, this.pageSize);
+      if (generation !== this.songRequestGeneration) return;
+      this.songsPage = result;
       this.enrichSongArtists();
     } catch (error) {
-      this.songsError = this.api.toUserMessage(error);
+      if (generation === this.songRequestGeneration) this.songsError = this.api.toUserMessage(error);
     } finally {
-      this.songsLoading = false;
-      this.changeDetector.markForCheck();
+      if (generation === this.songRequestGeneration) {
+        this.songsLoading = false;
+        this.changeDetector.markForCheck();
+      }
     }
   }
 

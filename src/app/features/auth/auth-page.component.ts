@@ -46,7 +46,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
               </div>
               <div class="auth-field">
                 <label for="register-dob">Date of birth</label>
-                <input id="register-dob" name="dob" [(ngModel)]="dob" type="date" autocomplete="bday" required />
+                <input id="register-dob" name="dob" [(ngModel)]="dob" type="date" [max]="today" autocomplete="bday" required />
               </div>
             </div>
             <label for="register-password">Password</label>
@@ -82,6 +82,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
             </button>
           </form>
           <p class="auth-switch">Already verified? <a routerLink="/login">Log in</a></p>
+          <p class="auth-switch">Wrong email address? <a routerLink="/register">Change your details</a></p>
         } @else if (mode === 'login') {
           <form class="form-stack" (ngSubmit)="submit()" #authForm="ngForm">
             <label for="login-identity">Email or username</label>
@@ -143,6 +144,7 @@ type AuthMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-pas
             </button>
           </form>
           <p class="auth-switch"><a routerLink="/login">Back to log in</a></p>
+          <p class="auth-switch">Need another code? <a routerLink="/forgot-password">Request a new one</a></p>
         }
       </div>
     </section>
@@ -166,6 +168,13 @@ export class AuthPageComponent implements OnInit {
   error = '';
   success = '';
   submitting = false;
+  readonly today = (() => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
 
   get heading(): string {
     return {
@@ -206,6 +215,9 @@ export class AuthPageComponent implements OnInit {
     if (this.mode === 'login' && this.route.snapshot.queryParamMap.get('verified') === '1') {
       this.success = 'Your email is verified. You can now log in.';
     }
+    if (this.mode === 'login' && this.route.snapshot.queryParamMap.get('passwordReset') === '1') {
+      this.success = 'Your password has been reset successfully. Sign in with your new password.';
+    }
     if (this.route.snapshot.queryParamMap.get('reason') === 'session-expired') {
       this.error = 'Your session expired. Please sign in again.';
     }
@@ -217,6 +229,7 @@ export class AuthPageComponent implements OnInit {
   }
 
   async submit(): Promise<void> {
+    if (this.submitting) return;
     this.error = '';
     this.success = '';
     this.submitting = true;
@@ -224,20 +237,20 @@ export class AuthPageComponent implements OnInit {
       switch (this.mode) {
         case 'register':
           await this.api.register({
-            name: this.name,
-            userName: this.userName,
-            email: this.email,
+            name: this.name.trim(),
+            userName: this.userName.trim(),
+            email: this.email.trim(),
             password: this.password,
             dob: this.dob,
           });
-          await this.router.navigate(['/verify'], { queryParams: { email: this.email } });
+          await this.router.navigate(['/verify'], { queryParams: { email: this.email.trim() } });
           break;
         case 'verify':
-          await this.api.verifyOtp(this.email, this.otp);
+          await this.api.verifyOtp(this.email.trim(), this.otp.trim());
           await this.router.navigate(['/login'], { queryParams: { verified: '1' } });
           break;
         case 'login': {
-          await this.api.login(this.identity, this.password);
+          await this.api.login(this.identity.trim(), this.password);
           const requested = this.route.snapshot.queryParamMap.get('next');
           // Only restore same-origin application paths, never an external redirect.
           const safeNext = requested?.startsWith('/') && !requested.startsWith('//') ? requested : null;
@@ -246,13 +259,17 @@ export class AuthPageComponent implements OnInit {
           break;
         }
         case 'forgot-password':
-          await this.api.requestPasswordReset(this.email);
-          await this.router.navigate(['/reset-password'], { queryParams: { email: this.email } });
+          await this.api.requestPasswordReset(this.email.trim());
+          await this.router.navigate(['/reset-password'], { queryParams: { email: this.email.trim() } });
           break;
         case 'reset-password':
-          await this.api.resetPassword(this.email, this.otp, this.password);
-          this.success = 'Your password has been updated. You can log in now.';
+          await this.api.resetPassword(this.email.trim(), this.otp.trim(), this.password);
           this.password = '';
+          this.otp = '';
+          await this.router.navigate(['/login'], {
+            queryParams: { passwordReset: '1' },
+            replaceUrl: true,
+          });
           break;
       }
     } catch (error) {

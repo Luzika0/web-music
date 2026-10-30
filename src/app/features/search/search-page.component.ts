@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, MusicApiService } from '../../core/services/music-api.service';
 import { PlaybackService } from '../../core/services/playback.service';
@@ -10,7 +10,7 @@ import { textLanguage } from '../../shared/utils/text-language';
 
 @Component({
   selector: 'app-search-page',
-  imports: [FormsModule, MediaImageComponent],
+  imports: [FormsModule, RouterLink, MediaImageComponent],
   template: `
     <section class="catalog-page">
       <header class="catalog-heading">
@@ -26,10 +26,11 @@ import { textLanguage } from '../../shared/utils/text-language';
           @if (loading) { <span class="button-loading-spinner" aria-hidden="true"></span> }
           <span>{{ loading ? 'Searching…' : 'Search' }}</span>
         </button>
+        @if (query) { <button class="button button-quiet search-clear-button" type="button" (click)="clearSearch()" [disabled]="loading">Clear</button> }
       </form>
 
       @if (error) {
-        <div class="inline-alert error-alert" role="alert">{{ error }} <button class="text-button" type="button" (click)="search()">Try again</button></div>
+        <div class="inline-alert error-alert" role="alert">{{ error }} <button class="text-button" type="button" (click)="retrySearch()">Try again</button></div>
       } @else if (!hasSearched) {
         <div class="search-welcome"><span class="search-welcome-icon" aria-hidden="true">♫</span><h2>Start with a name, a song, or a feeling.</h2><p>Search uses the current K-Song music catalog. Results depend on what the backend currently provides.</p></div>
       } @else if (loading) {
@@ -60,8 +61,10 @@ import { textLanguage } from '../../shared/utils/text-language';
             <div class="artist-grid">
               @for (artist of artists; track artist.id || $index) {
                 <article class="artist-card">
+                  <a class="search-artist-link" [routerLink]="['/artists']" [queryParams]="{ search: artist.name }" [attr.aria-label]="'Find music by ' + artist.name">
                   <div class="artist-art" [style.background]="colorFor(artist)"><span>{{ initial(artist.name) }}</span><app-media-image [imageKey]="artist.imageKey" [alt]="artist.name + ' artist portrait'" /></div>
-                  <div class="artist-info" [attr.lang]="textLanguage(artist.name)"><h3>{{ artist.name }}</h3><span>Artist</span></div>
+                  <div class="artist-info" [attr.lang]="textLanguage(artist.name)"><h3>{{ artist.name }}</h3><span>Artist · Find music →</span></div>
+                  </a>
                 </article>
               }
             </div>
@@ -78,6 +81,7 @@ export class SearchPageComponent implements OnInit {
   readonly textLanguage = textLanguage;
   private readonly api = inject(MusicApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly pageSize = getAppConfig().pageSize;
   query = '';
   songs: MediaItem[] = [];
@@ -89,13 +93,52 @@ export class SearchPageComponent implements OnInit {
   private searchGeneration = 0;
 
   ngOnInit(): void {
-    this.query = this.route.snapshot.queryParamMap.get('q') ?? '';
-    if (this.query.trim()) void this.search();
+    this.route.queryParamMap.subscribe((params) => {
+      this.query = params.get('q') ?? '';
+      const term = this.query.trim();
+      if (term) void this.runSearch(term);
+      else {
+        this.searchGeneration += 1;
+        this.songs = [];
+        this.artists = [];
+        this.loading = false;
+        this.hasSearched = false;
+        this.error = '';
+        this.partialError = '';
+      }
+    });
   }
 
-  async search(): Promise<void> {
+  search(): void {
     const term = this.query.trim();
-    if (!term) return;
+    if (!term) {
+      this.clearSearch();
+      return;
+    }
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { q: term },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
+  }
+
+  retrySearch(): void {
+    const term = this.query.trim();
+    if (term && !this.loading) void this.runSearch(term);
+  }
+
+  clearSearch(): void {
+    this.query = '';
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { q: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
+  }
+
+  private async runSearch(term: string): Promise<void> {
     const generation = ++this.searchGeneration;
     this.loading = true;
     this.hasSearched = true;
