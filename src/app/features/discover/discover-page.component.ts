@@ -170,7 +170,7 @@ export class DiscoverPageComponent implements OnInit {
       this.songsLoading = false;
       return;
     }
-    if (this.api.user()) void this.library.loadFavorites().catch(() => undefined);\n    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const artistPage = Number(params.get('artistPage') ?? 0);
       const songPage = Number(params.get('songPage') ?? 0);
       this.artistPage = Number.isInteger(artistPage) && artistPage >= 0 ? artistPage : 0;
