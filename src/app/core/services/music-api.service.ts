@@ -346,6 +346,13 @@ export class MusicApiService {
     })).filter((playlist) => !!playlist.id);
   }
 
+  async playlist(id: string): Promise<PlaylistItem> {
+    const response = await this.request<unknown>('GET', `/api/auth/library/playlists/${encodeURIComponent(id)}`, {
+      authenticated: true,
+    });
+    return this.normalizePlaylist(pathValue(response, 'data'));
+  }
+
   async createPlaylist(payload: { name: string; description?: string }): Promise<PlaylistItem> {
     const response = await this.request<unknown>('POST', '/api/auth/library/playlists', {
       authenticated: true, body: payload,
