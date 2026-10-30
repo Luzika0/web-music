@@ -86,7 +86,7 @@
   @if (api.notice()) {
     <div class="toast" role="status">
       <span>{{ api.notice() }}</span>
-      <button type="button" aria-label="Dismiss message" (click)="api.notice.set('')">×</button>
+      <button type="button" aria-label="Dismiss message" title="Dismiss message" (click)="api.notice.set('')"><app-icon name="close" size="18" /></button>
     </div>
   }
   <main class="page-content" id="main-content">
