@@ -156,7 +156,7 @@ export class App implements AfterViewInit, OnDestroy {
     this.hls = null;
 
     try {
-      await this.api.refreshPlaybackAuthorization();
+      await this.api.ensureSessionReady();
       if (generation !== this.playbackGeneration) {
         return;
       }
@@ -207,8 +207,8 @@ export class App implements AfterViewInit, OnDestroy {
       } else {
         this.player.setError('This browser cannot send the required secure playback headers for HLS. Try a browser with HLS.js support.');
       }
-    } catch {
-      this.player.setError('Could not initialize the audio player. Try another browser.');
+    } catch (error) {
+      this.player.setError(this.api.toUserMessage(error));
     }
   }
 
