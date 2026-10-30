@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, MusicApiService } from '../../core/services/music-api.service';
@@ -83,6 +84,8 @@ export class SearchPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly pageSize = getAppConfig().pageSize;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   query = '';
   songs: MediaItem[] = [];
   artists: MediaItem[] = [];
@@ -93,7 +96,7 @@ export class SearchPageComponent implements OnInit {
   private searchGeneration = 0;
 
   ngOnInit(): void {
-    this.route.queryParamMap.subscribe((params) => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.query = params.get('q') ?? '';
       const term = this.query.trim();
       if (term) void this.runSearch(term);
@@ -113,6 +116,10 @@ export class SearchPageComponent implements OnInit {
     const term = this.query.trim();
     if (!term) {
       this.clearSearch();
+      return;
+    }
+    if (term === (this.route.snapshot.queryParamMap.get('q') ?? '')) {
+      void this.runSearch(term);
       return;
     }
     void this.router.navigate([], {
@@ -144,19 +151,25 @@ export class SearchPageComponent implements OnInit {
     this.hasSearched = true;
     this.error = '';
     this.partialError = '';
-    const [songs, artists] = await Promise.allSettled([
-      this.api.songs(0, this.pageSize, term),
-      this.api.artists(0, this.pageSize, term),
-    ]);
-    if (generation !== this.searchGeneration) return;
-    this.songs = songs.status === 'fulfilled' ? songs.value.items : [];
-    this.artists = artists.status === 'fulfilled' ? artists.value.items : [];
-    if (songs.status === 'rejected' && artists.status === 'rejected') {
-      this.error = this.api.toUserMessage(songs.reason);
-    } else if (songs.status === 'rejected' || artists.status === 'rejected') {
-      this.partialError = 'Some catalog results could not be loaded. The available results are shown below.';
+    try {
+      const [songs, artists] = await Promise.allSettled([
+        this.api.songs(0, this.pageSize, term),
+        this.api.artists(0, this.pageSize, term),
+      ]);
+      if (generation !== this.searchGeneration) return;
+      this.songs = songs.status === 'fulfilled' ? songs.value.items : [];
+      this.artists = artists.status === 'fulfilled' ? artists.value.items : [];
+      if (songs.status === 'rejected' && artists.status === 'rejected') {
+        this.error = this.api.toUserMessage(songs.reason);
+      } else if (songs.status === 'rejected' || artists.status === 'rejected') {
+        this.partialError = 'Some catalog results could not be loaded. The available results are shown below.';
+      }
+    } finally {
+      if (generation === this.searchGeneration) {
+        this.loading = false;
+        this.changeDetector.markForCheck();
+      }
     }
-    this.loading = false;
   }
 
   colorFor(item: MediaItem): string {
