@@ -1,5 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MediaItem, MediaPage, MusicApiService } from '../../core/services/music-api.service';
@@ -61,6 +62,8 @@ export class ArtistsPageComponent implements OnInit {
   private requestGeneration = 0;
   private readonly platformId = inject(PLATFORM_ID);
   private readonly pageSize = getAppConfig().pageSize;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   readonly textLanguage = textLanguage;
   readonly placeholders = [0, 1, 2, 3, 4, 5];
   page: MediaPage | null = null;
@@ -74,7 +77,7 @@ export class ArtistsPageComponent implements OnInit {
       this.loading = false;
       return;
     }
-    this.route.queryParamMap.subscribe((params) => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.searchText = params.get('search') ?? '';
       this.pageNumber = 0;
       void this.load();
@@ -94,7 +97,10 @@ export class ArtistsPageComponent implements OnInit {
     } catch (error) {
       if (generation === this.requestGeneration) this.error = this.api.toUserMessage(error);
     } finally {
-      if (generation === this.requestGeneration) this.loading = false;
+      if (generation === this.requestGeneration) {
+        this.loading = false;
+        this.changeDetector.markForCheck();
+      }
     }
   }
 
