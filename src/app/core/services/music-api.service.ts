@@ -294,6 +294,19 @@ export class MusicApiService {
     }
   }
 
+  async adminSongs(page: number, size: number, searchText: string): Promise<MediaPage> {
+    const params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('searchText', searchText.trim());
+    // Creator Studio must not show offline catalog cache as a live deletable record list.
+    const response = await this.request<unknown>('GET', '/api/auth/media/list-song', {
+      params,
+      authenticated: true,
+    });
+    return normalizeMedia(response, 'song', page);
+  }
+
   async artists(page: number, size: number, searchText: string): Promise<MediaPage> {
     let params = new HttpParams().set('page', page).set('size', size);
     if (searchText.trim()) {
