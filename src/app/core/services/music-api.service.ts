@@ -522,7 +522,7 @@ export class MusicApiService {
 
       if (this.sessionGeneration !== generation
         || this.session?.id !== currentSession.id
-        || this.session.refreshToken !== currentSession.refreshToken) {
+        || this.session?.refreshToken !== currentSession.refreshToken) {
         throw new Error('The signed-in account changed during token refresh. Retry the request.');
       }
       this.session = { ...this.session, accessToken };
@@ -535,7 +535,7 @@ export class MusicApiService {
       if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)
         && this.sessionGeneration === generation
         && this.session?.id === currentSession.id
-        && this.session.refreshToken === currentSession.refreshToken) {
+        && this.session?.refreshToken === currentSession.refreshToken) {
         this.expireSession();
       }
       throw new Error(`Your session could not be refreshed. ${this.errorMessage(error)}`);
