@@ -238,7 +238,7 @@ export class AuthPageComponent implements OnInit {
             password: this.password,
             dob: this.dob,
           });
-          await this.router.navigate(['/verify'], { queryParams: { email: this.email } });
+          await this.router.navigate(['/verify'], { queryParams: { email: this.email.trim() } });
           break;
         case 'verify':
           await this.api.verifyOtp(this.email.trim(), this.otp.trim());
@@ -255,7 +255,7 @@ export class AuthPageComponent implements OnInit {
         }
         case 'forgot-password':
           await this.api.requestPasswordReset(this.email.trim());
-          await this.router.navigate(['/reset-password'], { queryParams: { email: this.email } });
+          await this.router.navigate(['/reset-password'], { queryParams: { email: this.email.trim() } });
           break;
         case 'reset-password':
           await this.api.resetPassword(this.email.trim(), this.otp.trim(), this.password);
