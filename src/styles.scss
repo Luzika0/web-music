@@ -4225,3 +4225,75 @@ button, a { touch-action: manipulation; }
   background: #17175d;
   color: #fff;
 }
+
+
+/* Consistent readable form controls across Login, Register, Verify, Reset and Admin. */
+:root {
+  --field-bg: #08082f;
+  --field-text: #f4f4fb;
+  --field-placeholder: #b6b6cf;
+  --field-label: #e4e4f1;
+  --field-border: rgba(228, 228, 241, .28);
+  --field-focus: #a8e9d0;
+  --field-disabled-bg: #17173d;
+}
+:root[data-theme="light"] {
+  --field-bg: #ffffff;
+  --field-text: #17172f;
+  --field-placeholder: #626b80;
+  --field-label: #252943;
+  --field-border: #c7cedb;
+  --field-focus: #176b59;
+  --field-disabled-bg: #edf0f5;
+}
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+       textarea, select) {
+  color: var(--field-text);
+  caret-color: var(--field-focus);
+  color-scheme: dark;
+}
+:root[data-theme="light"] :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+       textarea, select) { color-scheme: light; }
+:where(.form-stack input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+       .form-stack textarea, .form-stack select,
+       .search-form input, .catalog-search input) {
+  background-color: var(--field-bg);
+  border-color: var(--field-border);
+  color: var(--field-text);
+}
+:where(.form-stack input, .form-stack textarea, .form-stack select,
+       .search-form input, .catalog-search input)::placeholder {
+  color: var(--field-placeholder);
+  opacity: 1;
+}
+:where(.form-stack label, .auth-field label) { color: var(--field-label); }
+:where(.form-stack input, .form-stack textarea, .form-stack select,
+       .search-form input, .catalog-search input):focus-visible {
+  border-color: var(--field-focus);
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 20%, transparent);
+}
+:where(.form-stack input, .form-stack textarea, .form-stack select):disabled {
+  background: var(--field-disabled-bg);
+  color: var(--field-placeholder);
+  opacity: .8;
+}
+:where(.form-stack input, .form-stack textarea, .form-stack select):autofill {
+  -webkit-text-fill-color: var(--field-text);
+  box-shadow: 0 0 0 1000px var(--field-bg) inset;
+}
+:where(.form-stack input, .form-stack textarea, .form-stack select):-webkit-autofill {
+  -webkit-text-fill-color: var(--field-text);
+  caret-color: var(--field-text);
+  box-shadow: 0 0 0 1000px var(--field-bg) inset;
+}
+.auth-layout .auth-password-field input { background: var(--field-bg); color: var(--field-text); }
+.auth-layout .password-visibility { color: var(--field-placeholder); }
+.auth-layout .password-visibility:hover { color: var(--field-text); }
+.auth-layout .field-hint { color: var(--field-placeholder); }
+:root[data-theme="light"] .auth-layout .auth-intro,
+:root[data-theme="light"] .auth-layout .auth-switch,
+:root[data-theme="light"] .auth-layout .forgot-row,
+:root[data-theme="light"] .auth-layout .back-link { color: #4e5870; }
+:root[data-theme="light"] .auth-layout .eyebrow { color: #4e5870; }
+:root[data-theme="light"] .auth-layout .inline-alert { box-shadow: none; }
