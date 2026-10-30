@@ -21,11 +21,11 @@ import { getAppConfig } from '../../core/config/app-config';
         <p class="eyebrow">YOUR NEXT FAVORITE IS HERE</p>
         <h1>A little more <em>music.</em><br />A lot more you.</h1>
         <p class="hero-lead">Find the sounds that feel like your own. Fresh voices, familiar moods, all in one place.</p>
-        <a class="button button-light hero-action" [routerLink]="api.user() ? '/search' : '/register'">{{ api.user() ? 'Explore music' : 'Find your sound' }} <span aria-hidden="true">↗</span></a>
+        <a class="button button-light hero-action" [routerLink]="api.user() ? '/search' : '/register'">{{ api.user() ? 'Explore music' : 'Find your sound' }} <app-icon name="external" /></a>
       </div>
       <div class="hero-art" aria-hidden="true">
         <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
-        <span class="hero-disc"></span><span class="hero-spark">♫</span>
+        <span class="hero-disc"></span><span class="hero-spark"><app-icon name="music" size="36" /></span>
         <span class="hero-caption">SOUND<br />IN COLOR</span>
       </div>
       <span class="hero-index" aria-hidden="true">K-SONG / DISCOVERY</span>
@@ -64,7 +64,7 @@ import { getAppConfig } from '../../core/config/app-config';
                 <span>{{ initial(artist.name) }}</span>
                 <app-media-image [imageKey]="artist.imageKey" [alt]="artist.name + ' artist portrait'" />
               </div>
-              <div class="artist-info"><h3>{{ artist.name }}</h3><span>Artist · Explore music →</span></div>
+              <div class="artist-info"><h3>{{ artist.name }}</h3><span>Artist · Explore music <app-icon name="next" size="14" /></span></div>
               </a>
             </article>
           }
@@ -77,7 +77,7 @@ import { getAppConfig } from '../../core/config/app-config';
           </div>
         }
       } @else if (!artistsLoading) {
-        <div class="empty-state"><span class="empty-icon" aria-hidden="true">◌</span><h3>No artists found</h3><p>Try a different search, or check back when more artists arrive.</p></div>
+        <div class="empty-state"><span class="empty-icon" aria-hidden="true"><app-icon name="artists" size="30" /></span><h3>No artists found</h3><p>Try a different search, or check back when more artists arrive.</p></div>
       }
     </section>
 
@@ -106,7 +106,7 @@ import { getAppConfig } from '../../core/config/app-config';
                 <span class="song-cover" [style.background]="colorFor(song)">
                 <app-icon name="music" />
                 <app-media-image [imageKey]="song.imageKey" [alt]="''" />
-                <span class="play-overlay" aria-hidden="true">▶</span>
+                <span class="play-overlay" aria-hidden="true"><app-icon name="play" /></span>
                 </span>
                 <span class="song-details">
                   <span class="song-title">{{ song.name }}</span>
@@ -130,7 +130,7 @@ import { getAppConfig } from '../../core/config/app-config';
           </div>
         }
       } @else if (!songsLoading) {
-        <div class="empty-state"><span class="empty-icon" aria-hidden="true">♫</span><h3>No songs just yet</h3><p>There’s room for something wonderful. Check back soon.</p></div>
+        <div class="empty-state"><span class="empty-icon" aria-hidden="true"><app-icon name="music" size="30" /></span><h3>No songs just yet</h3><p>There’s room for something wonderful. Check back soon.</p></div>
       }
       @if (player.error()) { <p class="inline-alert error-alert" role="status">{{ player.error() }}</p> }
     </section>
