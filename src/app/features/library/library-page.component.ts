@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PlaybackService } from '../../core/services/playback.service';
 import { LibraryService, UserPlaylist } from '../../core/services/library.service';
-import { MusicApiService } from '../../core/services/music-api.service';
+import { MediaItem, MusicApiService } from '../../core/services/music-api.service';
+import { MediaImageComponent } from '../../shared/components/media-image.component';
 
 @Component({
   selector: 'app-library-page',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, MediaImageComponent],
   template: `
     <section class="catalog-page">
       <header class="catalog-heading">
@@ -61,21 +62,34 @@ import { MusicApiService } from '../../core/services/music-api.service';
             <div class="section-heading"><div><p class="eyebrow">PLAYLIST DETAILS</p><h2>{{ selected.name }}</h2></div><button class="text-button" type="button" (click)="selected = null">Close</button></div>
             <p>{{ selected.description }}</p>
             <form class="library-create-form" (ngSubmit)="addSong()">
-              <label for="song-id">Song ID (UUID)</label>
-              <input id="song-id" name="songId" [(ngModel)]="songId" required placeholder="Paste a song UUID">
-              <button class="button button-light" type="submit" [disabled]="saving || !songId.trim()">Add song</button>
+              <label for="song-search">Find a song in the catalog</label>
+              <input id="song-search" name="songSearch" [(ngModel)]="songSearch" placeholder="Search song or artist">
+              <label for="song-id">Choose song</label>
+              <select id="song-id" name="songId" [(ngModel)]="songId" required>
+                <option value="" disabled>Select a song</option>
+                @for (song of filteredSongOptions; track song.id) {
+                  <option [value]="song.id">{{ song.name }}{{ song.artistName ? ' — ' + song.artistName : '' }}</option>
+                }
+              </select>
+              <button class="button button-light" type="submit" [disabled]="saving || !songId">Add song</button>
             </form>
-            @if (selected.songIds.length) {
+            @if (selected.songs.length) {
               <ol class="playlist-song-ids">
-                @for (id of selected.songIds; track id; let i = $index) {
-                  <li><code>{{ id }}</code><span class="playlist-order-actions">
-                    <button class="text-button" type="button" [disabled]="i === 0 || saving" (click)="move(i, -1)" aria-label="Move song up">↑</button>
-                    <button class="text-button" type="button" [disabled]="i === selected!.songIds.length - 1 || saving" (click)="move(i, 1)" aria-label="Move song down">↓</button>
-                    <button class="text-button" type="button" [disabled]="saving" (click)="removeSong(id)">Remove</button>
-                  </span></li>
+                @for (track of selected.songs; track track.songId; let i = $index) {
+                  <li class="playlist-track-row">
+                    <button class="playlist-track-play" type="button" (click)="playTrack(i)" [attr.aria-label]="'Play ' + track.songName">
+                      <app-media-image [imageKey]="track.songImage" [alt]="''" />
+                      <span><strong>{{ track.songName }}</strong><small>{{ track.artistName || 'Artist unavailable' }}</small></span>
+                    </button>
+                    <span class="playlist-order-actions">
+                      <button class="text-button" type="button" [disabled]="i === 0 || saving" (click)="move(i, -1)" aria-label="Move song up">↑</button>
+                      <button class="text-button" type="button" [disabled]="i === selected!.songs.length - 1 || saving" (click)="move(i, 1)" aria-label="Move song down">↓</button>
+                      <button class="text-button" type="button" [disabled]="saving" (click)="removeSong(track.songId)">Remove</button>
+                    </span>
+                  </li>
                 }
               </ol>
-            } @else { <p>This playlist is empty. Add a song using its UUID above.</p> }
+            } @else { <p>This playlist is empty. Choose a song from the catalog above.</p> }
           </section>
         }
 
@@ -102,6 +116,13 @@ export class LibraryPageComponent implements OnInit {
   newName = '';
   newDescription = '';
   songId = '';
+  songSearch = '';
+  songCatalog: MediaItem[] = [];
+
+  get filteredSongOptions(): MediaItem[] {
+    const term = this.songSearch.trim().toLocaleLowerCase();
+    return this.songCatalog.filter(song => !term || (song.name + ' ' + song.artistName).toLocaleLowerCase().includes(term));
+  }
   loading = false;
   saving = false;
   error = '';
@@ -115,7 +136,8 @@ export class LibraryPageComponent implements OnInit {
   async load(): Promise<void> {
     this.loading = true; this.error = '';
     try {
-      await Promise.all([this.library.loadFavorites(), this.library.loadPlaylists()]);
+      const [, , catalog] = await Promise.all([this.library.loadFavorites(), this.library.loadPlaylists(), this.api.songs(0, 100, '')]);
+      this.songCatalog = catalog.items;
       if (this.selected) this.selected = await this.library.getPlaylist(this.selected.playlistId);
     } catch (error) { this.error = this.api.toUserMessage(error); }
     finally { this.loading = false; this.changeDetector.markForCheck(); }
@@ -169,9 +191,19 @@ export class LibraryPageComponent implements OnInit {
     this.saving = true; this.error = '';
     try {
       this.selected = await this.library.addSong(this.selected.playlistId, this.songId.trim());
-      this.songId = '';
+      this.songId = ''; this.songSearch = '';
     } catch (error) { this.error = this.api.toUserMessage(error); }
     finally { this.saving = false; this.changeDetector.markForCheck(); }
+  }
+
+  playTrack(index: number): void {
+    if (!this.selected) return;
+    const queue: MediaItem[] = this.selected.songs.map(track => ({
+      id: track.songId, artistId: track.artistId, name: track.songName,
+      artistName: track.artistName, imageKey: track.songImage, kind: 'song',
+    }));
+    const song = queue[index];
+    if (song) this.player.play(song, queue);
   }
 
   async removeSong(songId: string): Promise<void> {
