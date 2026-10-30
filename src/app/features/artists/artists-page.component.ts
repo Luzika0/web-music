@@ -45,9 +45,9 @@ import { textLanguage } from '../../shared/utils/text-language';
         </div>
         @if (page?.totalPages !== 1) {
           <div class="pagination">
-            <button type="button" class="button button-quiet" (click)="changePage(-1)" [disabled]="pageNumber === 0 || loading">← Previous</button>
+            <button type="button" class="button button-quiet" (click)="changePage(-1)" [disabled]="pageNumber === 0 || loading"><app-icon name="previous" /> Previous</button>
             <span aria-live="polite" aria-atomic="true">Page {{ pageNumber + 1 }}{{ page?.totalPages ? ' of ' + page?.totalPages : '' }}</span>
-            <button type="button" class="button button-quiet" (click)="changePage(1)" [disabled]="loading || !canGoNext()">Next →</button>
+            <button type="button" class="button button-quiet" (click)="changePage(1)" [disabled]="loading || !canGoNext()">Next <app-icon name="next" /></button>
           </div>
         }
       } @else if (!loading) {
