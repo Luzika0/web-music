@@ -2,7 +2,9 @@ import { isPlatformBrowser } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MediaItem, MediaPage, MusicApiService } from '../../core/services/music-api.service';
 import { LibraryService } from '../../core/services/library.service';
 import { PlaybackService } from '../../core/services/playback.service';
@@ -141,6 +143,9 @@ export class DiscoverPageComponent implements OnInit {
   readonly library = inject(LibraryService);
   private readonly config = getAppConfig();
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   readonly placeholders = [0, 1, 2, 3];
   readonly textLanguage = textLanguage;
@@ -164,8 +169,15 @@ export class DiscoverPageComponent implements OnInit {
       this.songsLoading = false;
       return;
     }
-    void this.loadArtists();
-    void this.loadSongs();
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const artistPage = Number(params.get('artistPage') ?? 0);
+      const songPage = Number(params.get('songPage') ?? 0);
+      this.artistPage = Number.isInteger(artistPage) && artistPage >= 0 ? artistPage : 0;
+      this.songPage = Number.isInteger(songPage) && songPage >= 0 ? songPage : 0;
+      this.artistSearch = params.get('artist') ?? '';
+      void this.loadArtists();
+      void this.loadSongs();
+    });
   }
 
   async loadArtists(): Promise<void> {
@@ -215,18 +227,35 @@ export class DiscoverPageComponent implements OnInit {
   }
 
   searchArtists(): void {
-    this.artistPage = 0;
-    void this.loadArtists();
+    const term = this.artistSearch.trim();
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { artist: term || null, artistPage: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
   }
 
   changeArtistPage(delta: number): void {
-    this.artistPage = Math.max(0, this.artistPage + delta);
-    void this.loadArtists();
+    const nextPage = Math.max(0, this.artistPage + delta);
+    if (nextPage === this.artistPage) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { artistPage: nextPage || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
   }
 
   changeSongPage(delta: number): void {
-    this.songPage = Math.max(0, this.songPage + delta);
-    void this.loadSongs();
+    const nextPage = Math.max(0, this.songPage + delta);
+    if (nextPage === this.songPage) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { songPage: nextPage || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
   }
 
   canGoNext(page: MediaPage | null): boolean {
