@@ -104,7 +104,7 @@ export class ArtistsPageComponent implements OnInit {
       relativeTo: this.route,
       queryParams: this.searchText.trim() ? { search: this.searchText.trim() } : { search: null },
       queryParamsHandling: 'merge',
-      replaceUrl: true,
+      replaceUrl: false,
     });
   }
 
