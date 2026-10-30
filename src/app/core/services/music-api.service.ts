@@ -515,9 +515,12 @@ export class MusicApiService {
         null,
         { params },
       ));
-      const accessToken = pathValue(response, 'data', 'newAcessToken');
+      // The current Spring Auth Service returns "newAccessToken".
+      // Accept the historic misspelling too for compatibility with older deployments.
+      const accessToken = pathValue(response, 'data', 'newAccessToken')
+        ?? pathValue(response, 'data', 'newAcessToken');
       if (typeof accessToken !== 'string' || !accessToken) {
-        throw new Error('The refresh response is missing data.newAcessToken.');
+        throw new Error('The refresh response is missing data.newAccessToken.');
       }
 
       if (this.sessionGeneration !== generation
