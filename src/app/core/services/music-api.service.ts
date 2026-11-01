@@ -637,8 +637,12 @@ export class MusicApiService {
         if (takenOver || controller.signal.aborted) {
           return;
         }
-      } catch {
+      } catch (error) {
         if (controller.signal.aborted) {
+          return;
+        }
+        if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) {
+          onError(this.errorMessage(error));
           return;
         }
         // A dropped SSE connection is not proof that this device lost authorization.
