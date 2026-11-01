@@ -685,17 +685,17 @@ export class MusicApiService {
         }
 
         buffer += decoder.decode(value, { stream: true });
-        let boundaryMatch = /(?:\\r\\n|\\r|\\n)(?:\\r\\n|\\r|\\n)/.exec(buffer);
+        let boundaryMatch = /(?:\r\n|\r|\n)(?:\r\n|\r|\n)/.exec(buffer);
         while (boundaryMatch) {
           const frame = buffer.slice(0, boundaryMatch.index);
           buffer = buffer.slice(boundaryMatch.index + boundaryMatch[0].length);
-          const eventName = frame.match(/^event:\\s*(.+)$/m)?.[1];
+          const eventName = frame.match(/^event:\s*(.+)$/m)?.[1];
           if (eventName === 'playback_taken_over') {
             onTakeover();
             controller.abort();
             return true;
           }
-          boundaryMatch = /(?:\\r\\n|\\r|\\n)(?:\\r\\n|\\r|\\n)/.exec(buffer);
+          boundaryMatch = /(?:\r\n|\r|\n)(?:\r\n|\r|\n)/.exec(buffer);
         }
       }
       return false;
