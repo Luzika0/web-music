@@ -148,7 +148,8 @@ export class PlaybackService {
         },
         (message) => {
           if (generation === this.requestGeneration) {
-            this.error.set(`Playback session monitoring failed: ${message}`);
+            this.stop();
+            this.error.set(`Playback authorization could not be verified. Start the track again to reconnect. ${message}`);
           }
         },
       );

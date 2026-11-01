@@ -407,7 +407,7 @@ export class MusicApiService {
     onError: (message: string) => void,
   ): () => void {
     const controller = new AbortController();
-    void this.consumePlaybackEvents(songId, playbackToken, controller, onTakeover)
+    void this.consumePlaybackEvents(songId, playbackToken, controller, onTakeover, onError)
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
           onError(this.errorMessage(error));
@@ -600,56 +600,132 @@ export class MusicApiService {
     playbackToken: string,
     controller: AbortController,
     onTakeover: () => void,
+    onError: (message: string) => void,
   ): Promise<void> {
-    await this.refreshIfExpiring();
-    const accessTokenUsed = this.session?.accessToken;
-    const url = this.absoluteUrl(`/api/auth/song/${encodeURIComponent(songId)}/playback-events`);
-    const request = (): Promise<Response> => fetch(url, {
-      headers: {
-        ...this.playbackHeaders(playbackToken),
-        Accept: 'text/event-stream',
-      },
-      credentials: 'omit',
-      cache: 'no-store',
-      signal: controller.signal,
-    });
-    let response = await request();
-    if (response.status === 401) {
-      if (!this.session?.accessToken || this.session.accessToken === accessTokenUsed) {
-        await this.refreshAccessToken();
-      }
-      response = await request();
-    }
-    if (!response.ok || !response.body) {
-      throw new Error(`Playback event stream failed (${response.status}).`);
-    }
+    const url = this.absoluteUrl('/api/auth/song/' + encodeURIComponent(songId) + '/playback-events');
+    let reconnectDelayMs = 1_000;
 
-    const reader = response.body.getReader();
+    while (!controller.signal.aborted) {
+      try {
+        await this.refreshIfExpiring();
+        const accessTokenUsed = this.session?.accessToken;
+        const request = (): Promise<Response> => fetch(url, {
+          headers: {
+            ...this.playbackHeaders(playbackToken),
+            Accept: 'text/event-stream',
+          },
+          credentials: 'omit',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+
+        let response = await request();
+        if (response.status === 401) {
+          if (!this.session?.accessToken || this.session.accessToken === accessTokenUsed) {
+            await this.refreshAccessToken();
+          }
+          response = await request();
+        }
+        if (!response.ok || !response.body) {
+          throw new ApiRequestError(
+            `Playback event stream failed (${response.status}).`,
+            response.status,
+          );
+        }
+
+        const takenOver = await this.readPlaybackEventStream(response, controller, onTakeover);
+        if (takenOver || controller.signal.aborted) {
+          return;
+        }
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+        if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) {
+          onError(this.errorMessage(error));
+          return;
+        }
+        // A dropped SSE connection is not proof that this device lost authorization.
+        // Verify the existing token before reconnecting; never mint a replacement here.
+      }
+
+      try {
+        const active = await this.playbackStatus(songId, playbackToken);
+        if (!active) {
+          onTakeover();
+          return;
+        }
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+        // Authentication rejection is terminal. Network and server errors are
+        // temporary, so keep trying with a capped backoff.
+        if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) {
+          onError(this.errorMessage(error));
+          return;
+        }
+      }
+
+      await this.waitForPlaybackReconnect(reconnectDelayMs, controller.signal);
+      reconnectDelayMs = Math.min(reconnectDelayMs * 2, 15_000);
+    }
+  }
+
+  private async readPlaybackEventStream(
+    response: Response,
+    controller: AbortController,
+    onTakeover: () => void,
+  ): Promise<boolean> {
+    const reader = response.body!.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+
     try {
       while (!controller.signal.aborted) {
         const { value, done } = await reader.read();
         if (done) {
-          return;
+          return false;
         }
-        buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
-        let boundary = buffer.indexOf('\n\n');
-        while (boundary >= 0) {
-          const frame = buffer.slice(0, boundary);
-          buffer = buffer.slice(boundary + 2);
+
+        buffer += decoder.decode(value, { stream: true });
+        let boundaryMatch = /(?:\r\n|\r|\n)(?:\r\n|\r|\n)/.exec(buffer);
+        while (boundaryMatch) {
+          const frame = buffer.slice(0, boundaryMatch.index);
+          buffer = buffer.slice(boundaryMatch.index + boundaryMatch[0].length);
           const eventName = frame.match(/^event:\s*(.+)$/m)?.[1];
           if (eventName === 'playback_taken_over') {
             onTakeover();
             controller.abort();
-            return;
+            return true;
           }
-          boundary = buffer.indexOf('\n\n');
+          boundaryMatch = /(?:\r\n|\r|\n)(?:\r\n|\r|\n)/.exec(buffer);
         }
       }
+      return false;
     } finally {
       reader.releaseLock();
     }
+  }
+
+  private waitForPlaybackReconnect(delayMs: number, signal: AbortSignal): Promise<void> {
+    return new Promise((resolve) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const finish = (): void => {
+        if (timer !== undefined) {
+          clearTimeout(timer);
+        }
+        signal.removeEventListener('abort', finish);
+        resolve();
+      };
+
+      if (signal.aborted) {
+        resolve();
+        return;
+      }
+      timer = setTimeout(finish, delayMs);
+      signal.addEventListener('abort', finish, { once: true });
+    });
   }
 
   private expirySeconds(token: string): number | null {
