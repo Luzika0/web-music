@@ -592,14 +592,17 @@ export class MusicApiService {
         this.expireSession();
       }
       throw new Error(`Your session could not be refreshed. ${this.errorMessage(error)}`);
-    private async consumePlaybackEvents(
+    }
+  }
+
+  private async consumePlaybackEvents(
     songId: string,
     playbackToken: string,
     controller: AbortController,
     onTakeover: () => void,
     onError: (message: string) => void,
   ): Promise<void> {
-    const url = this.absoluteUrl(\`/api/auth/song/\${encodeURIComponent(songId)}/playback-events\`);
+    const url = this.absoluteUrl('/api/auth/song/' + encodeURIComponent(songId) + '/playback-events');
     let reconnectDelayMs = 1_000;
 
     while (!controller.signal.aborted) {
@@ -625,7 +628,7 @@ export class MusicApiService {
         }
         if (!response.ok || !response.body) {
           throw new ApiRequestError(
-            \`Playback event stream failed (\${response.status}).\`,
+            `Playback event stream failed (${response.status}).`,
             response.status,
           );
         }
@@ -703,9 +706,11 @@ export class MusicApiService {
 
   private waitForPlaybackReconnect(delayMs: number, signal: AbortSignal): Promise<void> {
     return new Promise((resolve) => {
-      let timer: ReturnType<typeof setTimeout>;
+      let timer: ReturnType<typeof setTimeout> | undefined;
       const finish = (): void => {
-        clearTimeout(timer);
+        if (timer !== undefined) {
+          clearTimeout(timer);
+        }
         signal.removeEventListener('abort', finish);
         resolve();
       };
@@ -717,9 +722,6 @@ export class MusicApiService {
       timer = setTimeout(finish, delayMs);
       signal.addEventListener('abort', finish, { once: true });
     });
-  }
-
-  }
   }
 
   private expirySeconds(token: string): number | null {
